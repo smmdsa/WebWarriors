@@ -31,13 +31,19 @@ A continuación, te presento el **backlog detallado de tareas**, organizado en f
    - ✅ Diseñar un mapa 2D simple con tres carriles (superior, medio, inferior) y bases en cada extremo.
    - ✅ Usar tiles básicos (caminos, hierba, ríos) para el diseño visual.
    - ✅ Añadir estructuras estáticas: bases, Nexus (salud: 2000), y posiciones para torres.
+   - ✅ Implementar un río diagonal que cruza el mapa.
+   - ✅ Crear caminos perimetrales y diagonales de 3 tiles de ancho.
+   - ✅ Posicionar correctamente las bases en esquinas opuestas.
 
-5. 🔄 **Implementar el movimiento de personajes** [EN PROGRESO]
-   - Crear un sprite base (32x32 píxeles) para personajes jugables.
-   - Programar movimiento con WASD y clic del ratón para acciones.
-   - Añadir colisiones con bordes del mapa y estructuras.
+5. ✅ **Implementar el movimiento de personajes**
+   - ✅ Crear un sprite base (32x32 píxeles) para personajes jugables.
+   - ✅ Programar movimiento con clic derecho para desplazamiento y posicionamiento.
+   - ✅ Añadir indicador visual de destino de movimiento.
+   - ✅ Implementar rotación del personaje hacia la dirección de movimiento.
+   - ✅ Configurar control de cámara con teclas de flecha y tecla espacio para seguimiento.
+   - ✅ Añadir barra de salud y sistema básico de habilidades (Q, W).
 
-6. **Añadir minions**
+6. 🔄 **Añadir minions** [EN PROGRESO]
    - Diseñar sprites para minions aliados y enemigos.
    - Implementar generación automática de minions cada 30 segundos desde las bases.
    - Programar rutas predefinidas para que avancen por los carriles.

@@ -14,6 +14,12 @@ export class MainScene extends Phaser.Scene {
   private player!: Player;
   private cameraFollowsPlayer: boolean = false;
   private spaceKey!: Phaser.Input.Keyboard.Key;
+  
+  // Configuración de zoom
+  private minZoom: number = 0.5;
+  private maxZoom: number = 2.0;
+  private currentZoom: number = 1.5;
+  private zoomFactor: number = 0.1;
 
   constructor() {
     super({ key: 'MainScene' });
@@ -41,7 +47,7 @@ export class MainScene extends Phaser.Scene {
     this.player = new Player(this, 100, 900);
     
     // Configurar la cámara principal
-    this.cameras.main.setZoom(1.5); // Zoom más cercano al personaje
+    this.cameras.main.setZoom(this.currentZoom); // Zoom inicial
     this.cameras.main.setBounds(0, 0, 992, 992); // Límites del mapa
     
     // Configurar evento para la tecla espacio (alternar seguimiento de cámara)
@@ -60,6 +66,25 @@ export class MainScene extends Phaser.Scene {
     
     // Prevenir el menú contextual del navegador al hacer clic derecho
     this.input.mouse.disableContextMenu();
+    
+    // Configurar zoom con la rueda del mouse
+    this.input.on('wheel', (pointer: Phaser.Input.Pointer, gameObjects: any, deltaX: number, deltaY: number, deltaZ: number) => {
+      // deltaY es positivo cuando se rueda hacia abajo (zoom out)
+      // deltaY es negativo cuando se rueda hacia arriba (zoom in)
+      if (deltaY > 0) {
+        // Zoom out
+        this.currentZoom = Math.max(this.minZoom, this.currentZoom - this.zoomFactor);
+      } else if (deltaY < 0) {
+        // Zoom in
+        this.currentZoom = Math.min(this.maxZoom, this.currentZoom + this.zoomFactor);
+      }
+      
+      // Aplicar el nuevo nivel de zoom
+      this.cameras.main.setZoom(this.currentZoom);
+      
+      // Mostrar indicador de zoom en la consola (para depuración)
+      console.log(`Zoom: ${this.currentZoom.toFixed(2)}`);
+    });
   }
 
   update(): void {
