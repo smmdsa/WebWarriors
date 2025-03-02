@@ -20,6 +20,9 @@ export class MainScene extends Phaser.Scene {
   private maxZoom: number = 2.0;
   private currentZoom: number = 1.5;
   private zoomFactor: number = 0.1;
+  
+  // Elemento de texto para mostrar información de zoom
+  private zoomText!: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: 'MainScene' });
@@ -50,6 +53,15 @@ export class MainScene extends Phaser.Scene {
     this.cameras.main.setZoom(this.currentZoom); // Zoom inicial
     this.cameras.main.setBounds(0, 0, 992, 992); // Límites del mapa
     
+    // Crear texto para mostrar información de zoom
+    this.zoomText = this.add.text(10, 10, `Zoom: ${this.currentZoom.toFixed(2)} [Min: ${this.minZoom} | Max: ${this.maxZoom}]`, {
+      font: '16px Arial',
+      color: '#ffffff',
+      backgroundColor: '#000000'
+    });
+    this.zoomText.setScrollFactor(0); // Fijar a la cámara
+    this.zoomText.setDepth(100); // Asegurar que esté por encima de otros elementos
+    
     // Configurar evento para la tecla espacio (alternar seguimiento de cámara)
     this.input.keyboard.on('keydown-SPACE', () => {
       this.cameraFollowsPlayer = !this.cameraFollowsPlayer;
@@ -59,6 +71,9 @@ export class MainScene extends Phaser.Scene {
       } else {
         this.cameras.main.stopFollow();
       }
+      
+      // Actualizar texto con estado de seguimiento
+      this.updateZoomText();
     });
     
     // Inicialmente, la cámara no sigue al jugador
@@ -69,6 +84,9 @@ export class MainScene extends Phaser.Scene {
     
     // Configurar zoom con la rueda del mouse
     this.input.on('wheel', (pointer: Phaser.Input.Pointer, gameObjects: any, deltaX: number, deltaY: number, deltaZ: number) => {
+      // Guardar zoom anterior para comparación
+      const previousZoom = this.currentZoom;
+      
       // deltaY es positivo cuando se rueda hacia abajo (zoom out)
       // deltaY es negativo cuando se rueda hacia arriba (zoom in)
       if (deltaY > 0) {
@@ -82,9 +100,15 @@ export class MainScene extends Phaser.Scene {
       // Aplicar el nuevo nivel de zoom
       this.cameras.main.setZoom(this.currentZoom);
       
-      // Mostrar indicador de zoom en la consola (para depuración)
-      console.log(`Zoom: ${this.currentZoom.toFixed(2)}`);
+      // Actualizar texto con información de zoom
+      this.updateZoomText();
+      
+      // Mostrar información detallada en la consola
+      console.log(`Zoom: ${this.currentZoom.toFixed(2)} | Delta: ${(this.currentZoom - previousZoom).toFixed(2)} | Min: ${this.minZoom} | Max: ${this.maxZoom}`);
     });
+    
+    // Log inicial de configuración de zoom
+    console.log(`Configuración inicial de zoom - Actual: ${this.currentZoom} | Min: ${this.minZoom} | Max: ${this.maxZoom} | Factor: ${this.zoomFactor}`);
   }
 
   update(): void {
@@ -105,6 +129,12 @@ export class MainScene extends Phaser.Scene {
         this.cameras.main.scrollX += cameraSpeed;
       }
     }
+  }
+  
+  private updateZoomText(): void {
+    // Actualizar el texto con la información actual de zoom y seguimiento
+    const followText = this.cameraFollowsPlayer ? "Siguiendo al jugador" : "Cámara libre";
+    this.zoomText.setText(`Zoom: ${this.currentZoom.toFixed(2)} [Min: ${this.minZoom} | Max: ${this.maxZoom}] | ${followText}`);
   }
   
   private createPlayerTexture(): void {
