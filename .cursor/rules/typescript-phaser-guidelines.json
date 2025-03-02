@@ -3,6 +3,15 @@
   "description": "Rules and best practices for web-based game development using TypeScript and Phaser.js",
   "patterns": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
   "rules": {
+    "workflow": {
+      "development_flow": [
+        "Always follow the backlog.md tasks in sequential order",
+        "Reference game-design-document.md for detailed specifications",
+        "Mark completed tasks in backlog.md with ✅",
+        "Never skip steps or jump ahead in the backlog",
+        "Update documentation as features are implemented"
+      ]
+    },
     "general": {
       "greeting": "YOOO! Let's build an awesome web game! 🎮",
       "codeStyle": {

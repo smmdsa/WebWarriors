@@ -9,30 +9,30 @@ A continuación, te presento el **backlog detallado de tareas**, organizado en f
 ## Backlog Completo de Tareas para el Desarrollo de WebWarriors
 
 ### Fase 1: Configuración y Preparación del Entorno
-1. **Configurar el entorno de desarrollo**
-   - Instalar Node.js y npm para gestionar dependencias y el servidor.
-   - Configurar un proyecto con TypeScript para un código más robusto.
-   - Instalar Phaser.js (motor gráfico 2D) y Socket.io (conexión multijugador).
-   - Crear un servidor básico con Node.js para pruebas locales.
+1. ✅ **Configurar el entorno de desarrollo**
+   - ✅ Instalar Node.js y npm para gestionar dependencias y el servidor.
+   - ✅ Configurar un proyecto con TypeScript para un código más robusto.
+   - ✅ Instalar Phaser.js (motor gráfico 2D) y Socket.io (conexión multijugador).
+   - ✅ Crear un servidor básico con Node.js para pruebas locales.
 
-2. **Configurar el repositorio y herramientas**
-   - Crear un repositorio en GitHub para control de versiones.
-   - Establecer ramas `develop` (desarrollo) y `main` (producción).
-   - Configurar ESLint y Prettier para mantener el código limpio y consistente.
+2. ✅ **Configurar el repositorio y herramientas**
+   - ✅ Crear un repositorio en GitHub para control de versiones.
+   - ✅ Establecer ramas `develop` (desarrollo) y `main` (producción).
+   - ✅ Configurar ESLint y Prettier para mantener el código limpio y consistente.
 
 ---
 
 ### Fase 2: Desarrollo del Cliente (Phaser.js)
-3. **Crear la estructura básica del juego**
-   - Inicializar una escena en Phaser.js con un lienzo vacío.
-   - Configurar la cámara (vista superior) y los controles básicos (teclado WASD y ratón).
+3. ✅ **Crear la estructura básica del juego**
+   - ✅ Inicializar una escena en Phaser.js con un lienzo vacío.
+   - ✅ Configurar la cámara (vista superior) y los controles básicos (teclado WASD y ratón).
 
-4. **Diseñar y crear el mapa del juego**
-   - Diseñar un mapa 2D simple con tres carriles (superior, medio, inferior) y bases en cada extremo.
-   - Usar tiles básicos (caminos, hierba, ríos) para el diseño visual.
-   - Añadir estructuras estáticas: bases, Nexus (salud: 2000), y posiciones para torres.
+4. ✅ **Diseñar y crear el mapa del juego**
+   - ✅ Diseñar un mapa 2D simple con tres carriles (superior, medio, inferior) y bases en cada extremo.
+   - ✅ Usar tiles básicos (caminos, hierba, ríos) para el diseño visual.
+   - ✅ Añadir estructuras estáticas: bases, Nexus (salud: 2000), y posiciones para torres.
 
-5. **Implementar el movimiento de personajes**
+5. 🔄 **Implementar el movimiento de personajes** [EN PROGRESO]
    - Crear un sprite base (32x32 píxeles) para personajes jugables.
    - Programar movimiento con WASD y clic del ratón para acciones.
    - Añadir colisiones con bordes del mapa y estructuras.

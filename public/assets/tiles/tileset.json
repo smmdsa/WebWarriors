@@ -1,0 +1,135 @@
+[
+    {
+        "name": "base_floor",
+        "x": 0,
+        "y": 0,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "base_wall",
+        "x": 64,
+        "y": 128,
+        "width": 30,
+        "height": 30
+    },
+    {
+        "name": "bush",
+        "x": 0,
+        "y": 32,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "grass",
+        "x": 32,
+        "y": 0,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "highlight",
+        "x": 32,
+        "y": 32,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "nexus_platform",
+        "x": 0,
+        "y": 64,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "path",
+        "x": 32,
+        "y": 64,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "river",
+        "x": 64,
+        "y": 0,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "river_corner_bottomleft",
+        "x": 64,
+        "y": 32,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "river_corner_bottomright",
+        "x": 64,
+        "y": 64,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "river_corner_topleft",
+        "x": 0,
+        "y": 96,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "river_corner_topright",
+        "x": 32,
+        "y": 96,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "river_edge_bottom",
+        "x": 64,
+        "y": 96,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "river_edge_top",
+        "x": 96,
+        "y": 0,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "rock",
+        "x": 96,
+        "y": 32,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "shadow",
+        "x": 96,
+        "y": 64,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "tower_base",
+        "x": 96,
+        "y": 96,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "tower_destroyed",
+        "x": 0,
+        "y": 128,
+        "width": 32,
+        "height": 32
+    },
+    {
+        "name": "tree",
+        "x": 32,
+        "y": 128,
+        "width": 32,
+        "height": 32
+    }
+]
