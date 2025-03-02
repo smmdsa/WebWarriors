@@ -12,6 +12,7 @@ export class Player extends Phaser.GameObjects.Sprite {
   private lastAttackTime: number = 0;
   private healthBar: Phaser.GameObjects.Graphics;
   private moveTarget: Phaser.GameObjects.Graphics;
+  private currentMoveTargetTween: Phaser.Tweens.Tween | null = null;
   
   // Habilidades
   private skill1Cooldown: number = 5000; // 5 segundos
@@ -103,9 +104,6 @@ export class Player extends Phaser.GameObjects.Sprite {
         // Detener cuando estemos cerca del objetivo
         body.setVelocity(0, 0);
         this.isMoving = false;
-        
-        // Limpiar el indicador de destino
-        this.moveTarget.clear();
       }
     }
   }
@@ -116,21 +114,43 @@ export class Player extends Phaser.GameObjects.Sprite {
   }
   
   private showMoveTarget(x: number, y: number) {
-    // Limpiar el gráfico anterior
+    // Detener cualquier animación previa del indicador
+    if (this.currentMoveTargetTween) {
+      this.currentMoveTargetTween.stop();
+      this.currentMoveTargetTween = null;
+    }
+    
+    // Restablecer la opacidad y limpiar el gráfico anterior
     this.moveTarget.clear();
+    this.moveTarget.alpha = 1;
     
-    // Dibujar un círculo en la posición de destino
-    this.moveTarget.lineStyle(2, 0x00ff00, 0.8);
-    this.moveTarget.strokeCircle(x, y, 10);
+    // Dibujar un círculo más visible en la posición de destino
+    this.moveTarget.lineStyle(3, 0x00ff00, 1); // Línea más gruesa y totalmente opaca
+    this.moveTarget.strokeCircle(x, y, 15); // Círculo más grande
     
-    // Añadir un efecto de desvanecimiento
-    this.scene.tweens.add({
+    // Añadir un efecto de "pulso" para mayor visibilidad
+    this.moveTarget.lineStyle(1, 0xffffff, 0.7); // Línea interior blanca
+    this.moveTarget.strokeCircle(x, y, 12);
+    
+    // Añadir una X en el centro para mayor claridad
+    this.moveTarget.lineStyle(2, 0x00ff00, 1);
+    this.moveTarget.beginPath();
+    this.moveTarget.moveTo(x - 5, y - 5);
+    this.moveTarget.lineTo(x + 5, y + 5);
+    this.moveTarget.moveTo(x + 5, y - 5);
+    this.moveTarget.lineTo(x - 5, y + 5);
+    this.moveTarget.closePath();
+    this.moveTarget.strokePath();
+    
+    // Añadir un efecto de desvanecimiento más rápido (500ms en lugar de 1000ms)
+    this.currentMoveTargetTween = this.scene.tweens.add({
       targets: this.moveTarget,
       alpha: 0,
-      duration: 1000,
+      duration: 500, // Duración reducida a la mitad
       onComplete: () => {
         this.moveTarget.clear();
         this.moveTarget.alpha = 1;
+        this.currentMoveTargetTween = null;
       }
     });
   }
