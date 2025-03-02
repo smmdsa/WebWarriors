@@ -1,0 +1,39 @@
+{
+  "name": "webwarriors",
+  "version": "1.0.0",
+  "description": "A web-based MOBA game inspired by League of Legends, built with TypeScript, Phaser.js and Socket.io",
+  "main": "dist/server/index.js",
+  "scripts": {
+    "start": "node dist/server/index.js",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server/index.ts",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "game",
+    "moba",
+    "phaser",
+    "typescript",
+    "socketio",
+    "multiplayer"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "phaser": "^3.70.0",
+    "socket.io": "^4.7.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "@typescript-eslint/eslint-plugin": "^8.25.0",
+    "@typescript-eslint/parser": "^8.25.0",
+    "eslint": "^8.56.0",
+    "nodemon": "^3.0.3",
+    "prettier": "^3.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+} 

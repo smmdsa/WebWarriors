@@ -1,0 +1,90 @@
+{
+  "name": "TypeScript Phaser Game Development Guidelines",
+  "description": "Rules and best practices for web-based game development using TypeScript and Phaser.js",
+  "patterns": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+  "rules": {
+    "general": {
+      "greeting": "YOOO! Let's build an awesome web game! 🎮",
+      "codeStyle": {
+        "naming": {
+          "classes": "PascalCase",
+          "interfaces": "IPascalCase",
+          "types": "TPascalCase",
+          "methods": "camelCase",
+          "private": "_camelCase",
+          "constants": "UPPER_SNAKE_CASE"
+        }
+      }
+    },
+    "performance": {
+      "guidelines": [
+        "Cache variables and DOM queries aggressively",
+        "Use requestAnimationFrame for smooth animations",
+        "Implement object pooling for frequently created/destroyed game objects",
+        "Minimize garbage collection by reusing objects",
+        "Use sprite sheets and texture atlases",
+        "Implement proper asset preloading",
+        "Use WebGL renderer when possible"
+      ]
+    },
+    "architecture": {
+      "patterns": [
+        "Use TypeScript strict mode",
+        "Implement Scene pattern for game states",
+        "Use composition over inheritance",
+        "Keep game logic and rendering separate",
+        "Use event system for decoupled communication",
+        "Implement state management for game data"
+      ]
+    },
+    "phaser": {
+      "bestPractices": [
+        "Use Scene lifecycle methods properly (preload, create, update)",
+        "Implement proper asset management with loading screens",
+        "Use physics groups for similar objects",
+        "Implement proper game scaling and responsive design",
+        "Use sprite pools for particle effects",
+        "Implement proper input handling with pointer events"
+      ]
+    },
+    "debugging": {
+      "practices": [
+        "Use TypeScript's strict type checking",
+        "Implement proper error boundaries",
+        "Add descriptive console logs in development",
+        "Use Chrome DevTools Performance panel for optimization",
+        "Implement proper error handling for asset loading",
+        "Use Phaser's debug features in development"
+      ]
+    },
+    "commitStyle": {
+      "format": "type(scope): description",
+      "types": [
+        "feat: New feature or enhancement",
+        "fix: Bug fix",
+        "perf: Performance improvement",
+        "refactor: Code restructuring",
+        "style: Code style/formatting",
+        "docs: Documentation updates",
+        "test: Test-related changes",
+        "chore: Maintenance tasks"
+      ],
+      "maxLength": 50
+    }
+  },
+  "tooling": {
+    "required": [
+      "TypeScript",
+      "ESLint",
+      "Prettier",
+      "Vite",
+      "Phaser 3"
+    ],
+    "recommended": [
+      "Chrome DevTools",
+      "Visual Studio Code",
+      "Performance Monitor",
+      "Asset Optimization Tools"
+    ]
+  }
+} 

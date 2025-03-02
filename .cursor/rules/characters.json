@@ -1,0 +1,442 @@
+[
+    {
+      "nombre": "Caballero de Hierro",
+      "descripcion": "Un guerrero acorazado que protege a sus aliados con su escudo impenetrable.",
+      "rol": "Tanque",
+      "vida_inicial": 800,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 50,
+      "habilidades": [
+        {
+          "nombre": "Golpe de Escudo",
+          "descripcion": "Aturde a un enemigo por 2 segundos y causa daño.",
+          "consumo_mana": 50,
+          "dano": 80
+        },
+        {
+          "nombre": "Provocación",
+          "descripcion": "Fuerza a los enemigos cercanos a atacar al Caballero de Hierro por 3 segundos.",
+          "consumo_mana": 70,
+          "dano": 0
+        }
+      ]
+    },
+    {
+      "nombre": "Guardián de Piedra",
+      "descripcion": "Un coloso de roca que absorbe daño y controla el campo de batalla.",
+      "rol": "Tanque",
+      "vida_inicial": 800,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 50,
+      "habilidades": [
+        {
+          "nombre": "Terremoto",
+          "descripcion": "Golpea el suelo, causando daño en área y ralentizando a los enemigos por 2 segundos.",
+          "consumo_mana": 60,
+          "dano": 100
+        },
+        {
+          "nombre": "Muro de Piedra",
+          "descripcion": "Crea un muro impenetrable que bloquea el paso por 5 segundos.",
+          "consumo_mana": 80,
+          "dano": 0
+        }
+      ]
+    },
+    {
+      "nombre": "Paladín Sagrado",
+      "descripcion": "Un guerrero bendecido que protege a sus aliados con luz divina.",
+      "rol": "Tanque",
+      "vida_inicial": 800,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 50,
+      "habilidades": [
+        {
+          "nombre": "Martillo de Luz",
+          "descripcion": "Golpea con un martillo de luz, causando daño y aturdiendo al enemigo por 1.5 segundos.",
+          "consumo_mana": 50,
+          "dano": 90
+        },
+        {
+          "nombre": "Aura Protectora",
+          "descripcion": "Otorga un escudo a todos los aliados cercanos por 5 segundos.",
+          "consumo_mana": 80,
+          "absorcion": 100
+        }
+      ]
+    },
+    {
+      "nombre": "Titán de Hierro",
+      "descripcion": "Un gigante mecánico que aplasta a sus enemigos con su fuerza bruta.",
+      "rol": "Tanque",
+      "vida_inicial": 800,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 50,
+      "habilidades": [
+        {
+          "nombre": "Puño de Acero",
+          "descripcion": "Golpea el suelo, causando daño en área y aturdiendo a los enemigos por 1 segundo.",
+          "consumo_mana": 60,
+          "dano": 90
+        },
+        {
+          "nombre": "Blindaje Reactivo",
+          "descripcion": "Activa un escudo que absorbe daño y refleja parte del daño recibido.",
+          "consumo_mana": 70,
+          "absorcion": 150
+        }
+      ]
+    },
+    {
+      "nombre": "Arquero Veloz",
+      "descripcion": "Un tirador ágil que dispara flechas precisas desde la distancia.",
+      "rol": "Dealer de Daño",
+      "vida_inicial": 600,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 60,
+      "habilidades": [
+        {
+          "nombre": "Flecha Perforante",
+          "descripcion": "Dispara una flecha que atraviesa a los enemigos, causando daño a todos en línea recta.",
+          "consumo_mana": 40,
+          "dano": 90
+        },
+        {
+          "nombre": "Lluvia de Flechas",
+          "descripcion": "Dispara múltiples flechas al aire que caen en un área, causando daño a los enemigos.",
+          "consumo_mana": 70,
+          "dano": 120
+        }
+      ]
+    },
+    {
+      "nombre": "Espadachín Maestro",
+      "descripcion": "Un duelista experto que inflige daño rápido con su espada.",
+      "rol": "Dealer de Daño",
+      "vida_inicial": 600,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 60,
+      "habilidades": [
+        {
+          "nombre": "Corte Rápido",
+          "descripcion": "Realiza un corte veloz que causa daño y reduce la armadura del enemigo.",
+          "consumo_mana": 30,
+          "dano": 70
+        },
+        {
+          "nombre": "Estocada Mortal",
+          "descripcion": "Embiste al enemigo, causando daño crítico si el enemigo tiene menos de 30% de vida.",
+          "consumo_mana": 50,
+          "dano": 100
+        }
+      ]
+    },
+    {
+      "nombre": "Pistolero Audaz",
+      "descripcion": "Un tirador con pistolas duales que dispara ráfagas rápidas.",
+      "rol": "Dealer de Daño",
+      "vida_inicial": 600,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 60,
+      "habilidades": [
+        {
+          "nombre": "Ráfaga de Balas",
+          "descripcion": "Dispara una ráfaga de 5 balas en cono, causando daño a los enemigos alcanzados.",
+          "consumo_mana": 40,
+          "dano": 150
+        },
+        {
+          "nombre": "Disparo Preciso",
+          "descripcion": "Dispara un tiro certero que causa daño crítico.",
+          "consumo_mana": 50,
+          "dano": 120
+        }
+      ]
+    },
+    {
+      "nombre": "Artillero Pesado",
+      "descripcion": "Un soldado con un cañón que dispara proyectiles explosivos.",
+      "rol": "Dealer de Daño",
+      "vida_inicial": 600,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 60,
+      "habilidades": [
+        {
+          "nombre": "Granada Explosiva",
+          "descripcion": "Lanza una granada que explota tras 1 segundo, causando daño en área.",
+          "consumo_mana": 50,
+          "dano": 110
+        },
+        {
+          "nombre": "Cañonazo",
+          "descripcion": "Dispara un proyectil de largo alcance que causa daño masivo.",
+          "consumo_mana": 70,
+          "dano": 150
+        }
+      ]
+    },
+    {
+      "nombre": "Francotirador Silencioso",
+      "descripcion": "Un tirador de élite que elimina objetivos desde la distancia.",
+      "rol": "Dealer de Daño",
+      "vida_inicial": 600,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 60,
+      "habilidades": [
+        {
+          "nombre": "Disparo a la Cabeza",
+          "descripcion": "Dispara un tiro preciso que causa daño crítico si el enemigo tiene menos de 50% de vida.",
+          "consumo_mana": 50,
+          "dano": 100
+        },
+        {
+          "nombre": "Camuflaje",
+          "descripcion": "Se vuelve invisible por 3 segundos, aumentando el daño del próximo ataque.",
+          "consumo_mana": 40,
+          "dano": 0
+        }
+      ]
+    },
+    {
+      "nombre": "Bailarina de Espadas",
+      "descripcion": "Una espadachina grácil que ataca con elegancia y precisión.",
+      "rol": "Dealer de Daño",
+      "vida_inicial": 600,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 60,
+      "habilidades": [
+        {
+          "nombre": "Danza de las Cuchillas",
+          "descripcion": "Realiza una serie de cortes rápidos, causando daño a los enemigos alrededor.",
+          "consumo_mana": 40,
+          "dano": 90
+        },
+        {
+          "nombre": "Estocada Elegante",
+          "descripcion": "Avanza rápidamente y apuñala al enemigo, causando daño y ralentizándolo.",
+          "consumo_mana": 50,
+          "dano": 100
+        }
+      ]
+    },
+    {
+      "nombre": "Sanador Místico",
+      "descripcion": "Un clérigo que cura y protege a sus aliados con magia divina.",
+      "rol": "Soporte",
+      "vida_inicial": 600,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 30,
+      "habilidades": [
+        {
+          "nombre": "Ola de Curación",
+          "descripcion": "Cura a todos los aliados en un área pequeña.",
+          "consumo_mana": 60,
+          "curacion": 100
+        },
+        {
+          "nombre": "Escudo Divino",
+          "descripcion": "Otorga un escudo que absorbe daño a un aliado por 5 segundos.",
+          "consumo_mana": 50,
+          "absorcion": 150
+        }
+      ]
+    },
+    {
+      "nombre": "Bardo Inspirador",
+      "descripcion": "Un músico que fortalece a sus aliados con melodías mágicas.",
+      "rol": "Soporte",
+      "vida_inicial": 600,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 30,
+      "habilidades": [
+        {
+          "nombre": "Canción de Valor",
+          "descripcion": "Aumenta el daño de los aliados cercanos por 10 segundos.",
+          "consumo_mana": 40,
+          "aumento_dano": "20%"
+        },
+        {
+          "nombre": "Nota Discordante",
+          "descripcion": "Silencia a un enemigo, impidiendo que use habilidades por 2 segundos.",
+          "consumo_mana": 50,
+          "dano": 0
+        }
+      ]
+    },
+    {
+      "nombre": "Alquimista Curativo",
+      "descripcion": "Un científico que usa pociones para curar y fortalecer a sus aliados.",
+      "rol": "Soporte",
+      "vida_inicial": 600,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 30,
+      "habilidades": [
+        {
+          "nombre": "Poción de Vida",
+          "descripcion": "Lanza una poción que cura a un aliado.",
+          "consumo_mana": 40,
+          "curacion": 120
+        },
+        {
+          "nombre": "Elixir de Fuerza",
+          "descripcion": "Otorga un aumento de daño a un aliado por 10 segundos.",
+          "consumo_mana": 50,
+          "aumento_dano": "25%"
+        }
+      ]
+    },
+    {
+      "nombre": "Guardián de Escudos",
+      "descripcion": "Un defensor que protege a sus aliados con barreras mágicas.",
+      "rol": "Soporte",
+      "vida_inicial": 600,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 30,
+      "habilidades": [
+        {
+          "nombre": "Barrera Protectora",
+          "descripcion": "Crea un escudo que absorbe daño para un aliado.",
+          "consumo_mana": 50,
+          "absorcion": 200
+        },
+        {
+          "nombre": "Campo de Fuerza",
+          "descripcion": "Crea un campo que reduce el daño recibido por todos los aliados dentro del área por 5 segundos.",
+          "consumo_mana": 70,
+          "reduccion_dano": "20%"
+        }
+      ]
+    },
+    {
+      "nombre": "Sombra Nocturna",
+      "descripcion": "Un asesino sigiloso que ataca desde las sombras.",
+      "rol": "Asesino",
+      "vida_inicial": 500,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 70,
+      "habilidades": [
+        {
+          "nombre": "Paso Sombra",
+          "descripcion": "Se teletransporta a una ubicación cercana, volviéndose invisible por 1 segundo.",
+          "consumo_mana": 40,
+          "dano": 0
+        },
+        {
+          "nombre": "Puñalada Trapera",
+          "descripcion": "Ataca por la espalda, causando daño extra si el enemigo está de espaldas.",
+          "consumo_mana": 30,
+          "dano": 100
+        }
+      ]
+    },
+    {
+      "nombre": "Ninja Veloz",
+      "descripcion": "Un maestro del ninjutsu que se mueve rápidamente y ataca con precisión.",
+      "rol": "Asesino",
+      "vida_inicial": 500,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 70,
+      "habilidades": [
+        {
+          "nombre": "Shuriken",
+          "descripcion": "Lanza un shuriken que causa daño y ralentiza al enemigo.",
+          "consumo_mana": 30,
+          "dano": 80
+        },
+        {
+          "nombre": "Golpe Fantasma",
+          "descripcion": "Realiza un ataque rápido que ignora la armadura del enemigo.",
+          "consumo_mana": 50,
+          "dano": 120
+        }
+      ]
+    },
+    {
+      "nombre": "Ladrón de Sombras",
+      "descripcion": "Un ladrón experto en sigilo y ataques sorpresa.",
+      "rol": "Asesino",
+      "vida_inicial": 500,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 70,
+      "habilidades": [
+        {
+          "nombre": "Emboscada",
+          "descripcion": "Se vuelve invisible y el próximo ataque causa daño extra.",
+          "consumo_mana": 40,
+          "dano": 50
+        },
+        {
+          "nombre": "Cuchillada Rápida",
+          "descripcion": "Realiza un ataque rápido que causa sangrado, dañando al enemigo con el tiempo.",
+          "consumo_mana": 30,
+          "dano": 60
+        }
+      ]
+    },
+    {
+      "nombre": "Maestro del Veneno",
+      "descripcion": "Un asesino que usa venenos para debilitar y eliminar a sus enemigos.",
+      "rol": "Asesino",
+      "vida_inicial": 500,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 70,
+      "habilidades": [
+        {
+          "nombre": "Dardo Envenenado",
+          "descripcion": "Lanza un dardo que causa daño y aplica veneno, reduciendo la curación recibida.",
+          "consumo_mana": 30,
+          "dano": 50
+        },
+        {
+          "nombre": "Nube Tóxica",
+          "descripcion": "Crea una nube de veneno en un área, causando daño con el tiempo a los enemigos dentro.",
+          "consumo_mana": 60,
+          "dano": 120
+        }
+      ]
+    },
+    {
+      "nombre": "Hechicero de Fuego",
+      "descripcion": "Un mago que domina el fuego para incinerar a sus enemigos.",
+      "rol": "Mago",
+      "vida_inicial": 500,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 40,
+      "habilidades": [
+        {
+          "nombre": "Bola de Fuego",
+          "descripcion": "Lanza una bola de fuego que explota al impactar, causando daño en área.",
+          "consumo_mana": 50,
+          "dano": 100
+        },
+        {
+          "nombre": "Muro de Llamas",
+          "descripcion": "Crea un muro de fuego que daña a los enemigos que lo atraviesan.",
+          "consumo_mana": 70,
+          "dano": 80
+        }
+      ]
+    },
+    {
+      "nombre": "Bruja del Hielo",
+      "descripcion": "Una hechicera que controla el hielo para congelar y ralentizar a sus oponentes.",
+      "rol": "Mago",
+      "vida_inicial": 500,
+      "mana_inicial": 200,
+      "dano_basico_inicial": 40,
+      "habilidades": [
+        {
+          "nombre": "Rayo de Hielo",
+          "descripcion": "Dispara un rayo de hielo que congela al enemigo por 1 segundo.",
+          "consumo_mana": 40,
+          "dano": 70
+        },
+        {
+          "nombre": "Tormenta de Nieve",
+          "descripcion": "Invoca una tormenta de nieve en un área, causando daño y ralentizando a los enemigos.",
+          "consumo_mana": 60,
+          "dano": 90
+        }
+      ]
+    }
+  ]
