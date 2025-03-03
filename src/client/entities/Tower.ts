@@ -155,11 +155,14 @@ export class Tower extends Phaser.GameObjects.Container {
     
     this.isDestroyed = true;
     
-    // Eliminar gráficos si existen
+    console.log(`Torre ${this.id} del equipo ${this.team} destruida`);
+    
+    // Ocultar rango de ataque
     if (this.rangeCircle) {
       this.rangeCircle.destroy();
     }
     
+    // Eliminar la barra de salud
     if (this.healthBar) {
       this.healthBar.destroy();
     }

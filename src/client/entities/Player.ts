@@ -190,17 +190,26 @@ export class Player extends Phaser.GameObjects.Sprite {
         // Obtener posición del clic en coordenadas del mundo
         const worldPoint = scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
         
-        // Verificar si hay un minion en esa posición
-        const clickedMinion = this.findMinionAtPosition(worldPoint.x, worldPoint.y);
+        // Verificar si hay un objetivo en esa posición (minion o torre)
+        const clickedTarget = this.findTargetAtPosition(worldPoint.x, worldPoint.y);
         
-        if (clickedMinion && clickedMinion.isEnemy) {
-          // Si hay un minion enemigo, atacarlo
-          this.attackMinion(clickedMinion);
-        } else {
-          // Si no, moverse a la posición
-          this.moveToPosition(worldPoint.x, worldPoint.y);
+        if (clickedTarget) {
+          // Verificar si es un enemigo (minion, torre u otro jugador)
+          const isEnemyMinion = 'minionType' in clickedTarget && clickedTarget.minionType === 'enemy';
+          const isEnemyTower = 'getTeam' in clickedTarget && clickedTarget.getTeam() === 'enemy';
+          const isEnemyPlayer = 'isEnemy' in clickedTarget && clickedTarget.isEnemy;
           
-          // Mostrar indicador de destino
+          if (isEnemyMinion || isEnemyTower || isEnemyPlayer) {
+            // Si es un enemigo, atacarlo
+            this.attackTarget(clickedTarget);
+          } else {
+            // Si no es un enemigo, moverse a la posición
+            this.moveToPosition(worldPoint.x, worldPoint.y);
+            this.showMoveTarget(worldPoint.x, worldPoint.y);
+          }
+        } else {
+          // Si no hay objetivo, moverse a la posición
+          this.moveToPosition(worldPoint.x, worldPoint.y);
           this.showMoveTarget(worldPoint.x, worldPoint.y);
         }
       }
@@ -291,16 +300,23 @@ export class Player extends Phaser.GameObjects.Sprite {
       this.updateExperienceRadius();
     }
     
-    // Verificar si hay un minion objetivo guardado y si estamos en rango para atacarlo
-    const targetMinion = this.getData('targetMinion');
-    if (targetMinion) {
-      const distance = Phaser.Math.Distance.Between(this.x, this.y, targetMinion.x, targetMinion.y);
-      if (distance <= this.attackRange) {
-        // Verificar si ha pasado suficiente tiempo desde el último ataque
-        const currentTime = this.scene.time.now;
-        if (currentTime - this.lastAttackTime >= this.attackCooldown) {
-          this.attack(targetMinion);
-          this.lastAttackTime = currentTime;
+    // Verificar si hay un objetivo guardado y si es válido
+    const target = this.getData('targetMinion');
+    if (target) {
+      // Verificar si el objetivo sigue activo
+      if (!target.active || (target.isDestroyed !== undefined && target.isDestroyed)) {
+        // Si el objetivo fue destruido, limpiarlo
+        this.setData('targetMinion', null);
+      } else {
+        // Si el objetivo sigue activo, verificar si estamos en rango
+        const distance = Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y);
+        if (distance <= this.attackRange) {
+          // Verificar si ha pasado suficiente tiempo desde el último ataque
+          const currentTime = this.scene.time.now;
+          if (currentTime - this.lastAttackTime >= this.attackCooldown) {
+            this.attack(target);
+            this.lastAttackTime = currentTime;
+          }
         }
       }
     }
@@ -959,8 +975,13 @@ export class Player extends Phaser.GameObjects.Sprite {
     // Registrar el tiempo del último ataque
     this.lastAttackTime = currentTime;
     
-    // Calcular daño según estadísticas
+    // Calcular daño según estadísticas y tipo de objetivo
     let damage = this.currentStats.physicalDamage;
+    
+    // Para torres, aplicar un modificador de daño (reducción del 30% para equilibrar)
+    if (isEnemyTower) {
+      damage = Math.floor(damage * 0.7);
+    }
     
     // Aplicar daño al objetivo
     if ('takeDamage' in target && typeof target.takeDamage === 'function') {
@@ -976,6 +997,11 @@ export class Player extends Phaser.GameObjects.Sprite {
       // Si el objetivo es un minion, alertar a los minions aliados cercanos
       if (isEnemyMinion) {
         this.alertNearbyAllies(target);
+      }
+      
+      // Si es una torre, mostrar texto de daño
+      if (isEnemyTower) {
+        this.showTowerDamageEffect(target, damage);
       }
     }
   }
@@ -1310,7 +1336,7 @@ Res: ${this.currentStats.physicalResistance} | M.Res: ${this.currentStats.magicR
         // Es una torre enemiga
         ('getTeam' in target && (target as any).getTeam() === 'enemy') ||
         // Es otro tipo de enemigo
-        ('isEnemy' in target && (target as any).isEnemy)
+        ('isEnemy' in target && target.isEnemy)
       )
     );
   }
@@ -1338,28 +1364,28 @@ Res: ${this.currentStats.physicalResistance} | M.Res: ${this.currentStats.magicR
   }
   
   /**
-   * Ataca a un minion específico
+   * Ataca a un objetivo específico (minion, torre u otro jugador)
    */
-  private attackMinion(minion: any): void {
-    // Guardar el minion como objetivo
-    this.setData('targetMinion', minion);
+  private attackTarget(target: any): void {
+    // Guardar el objetivo
+    this.setData('targetMinion', target);
     
-    // Calcular la distancia al minion
-    const distance = Phaser.Math.Distance.Between(this.x, this.y, minion.x, minion.y);
+    // Calcular la distancia al objetivo
+    const distance = Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y);
     
     if (distance <= this.attackRange) {
       // Si estamos en rango, atacar directamente
-      this.attack(minion);
+      this.attack(target);
     } else {
-      // Si no estamos en rango, movernos hacia el minion
+      // Si no estamos en rango, movernos hacia el objetivo
       // Calcular posición para estar en rango de ataque
-      const angle = Phaser.Math.Angle.Between(this.x, this.y, minion.x, minion.y);
+      const angle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
       
-      // Calcular una posición que esté a la distancia de ataque del minion
+      // Calcular una posición que esté a la distancia de ataque del objetivo
       // Restamos un pequeño margen para no quedarnos justo en el borde
       const attackDistance = this.attackRange * 0.9;
-      const targetX = minion.x - Math.cos(angle) * attackDistance;
-      const targetY = minion.y - Math.sin(angle) * attackDistance;
+      const targetX = target.x - Math.cos(angle) * attackDistance;
+      const targetY = target.y - Math.sin(angle) * attackDistance;
       
       // Movernos a esa posición
       this.moveToPosition(targetX, targetY);
@@ -1819,6 +1845,36 @@ Res: ${this.currentStats.physicalResistance} | M.Res: ${this.currentStats.magicR
     );
     damageText.setOrigin(0.5);
     
+    this.scene.tweens.add({
+      targets: damageText,
+      y: damageText.y - 30,
+      alpha: 0,
+      duration: 1000,
+      onComplete: () => {
+        damageText.destroy();
+      }
+    });
+  }
+  
+  /**
+   * Muestra un efecto visual de daño a torre
+   */
+  private showTowerDamageEffect(tower: any, damage: number): void {
+    // Crear texto de daño
+    const damageText = this.scene.add.text(
+      tower.x + (Math.random() * 40 - 20), // Posición aleatoria alrededor de la torre
+      tower.y - 40,
+      `-${damage}`,
+      {
+        fontSize: '18px',
+        color: '#ff0000',
+        stroke: '#000000',
+        strokeThickness: 3
+      }
+    );
+    damageText.setOrigin(0.5);
+    
+    // Animar el texto
     this.scene.tweens.add({
       targets: damageText,
       y: damageText.y - 30,
