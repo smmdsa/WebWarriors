@@ -27,7 +27,7 @@ export class Minion extends Phaser.GameObjects.Sprite {
   
   // Ataque
   private isAttacking: boolean = false;
-  private currentTarget: Phaser.GameObjects.GameObject | null = null;
+  public currentTarget: Phaser.GameObjects.GameObject | null = null;
   private attackLine: Phaser.GameObjects.Graphics | null = null;
   
   constructor(scene: Phaser.Scene, x: number, y: number, type: MinionType, subtype: MinionSubtype) {
@@ -122,7 +122,7 @@ export class Minion extends Phaser.GameObjects.Sprite {
         this.attackDamage = 15;
         this.attackRange = 50;
         this.attackCooldown = 1000;
-        this.speed = 120;
+        this.speed = 60;
         this.goldValue = 20;
         break;
         
@@ -130,9 +130,9 @@ export class Minion extends Phaser.GameObjects.Sprite {
         this.maxHealth = 200;
         this.health = this.maxHealth;
         this.attackDamage = 25;
-        this.attackRange = 300;
+        this.attackRange = 96; // 3 unidades (1 unidad = 32 píxeles)
         this.attackCooldown = 1500;
-        this.speed = 130;
+        this.speed = 60;
         this.goldValue = 25;
         break;
         
@@ -140,9 +140,9 @@ export class Minion extends Phaser.GameObjects.Sprite {
         this.maxHealth = 500;
         this.health = this.maxHealth;
         this.attackDamage = 40;
-        this.attackRange = 400;
+        this.attackRange = 112; // 3.5 unidades (1 unidad = 32 píxeles)
         this.attackCooldown = 2000;
-        this.speed = 100;
+        this.speed = 60;
         this.goldValue = 45;
         break;
     }
@@ -358,9 +358,6 @@ export class Minion extends Phaser.GameObjects.Sprite {
    * Busca y ataca objetivos cercanos
    */
   public findAndAttackTargets(targets: Phaser.GameObjects.GameObject[]): void {
-    // No atacar si ya está atacando
-    if (this.isAttacking) return;
-    
     // Filtrar objetivos enemigos
     const enemyTargets = targets.filter(target => {
       if (this.minionType === MinionType.ALLY) {
@@ -395,6 +392,20 @@ export class Minion extends Phaser.GameObjects.Sprite {
     // Si encontramos un objetivo, comenzar a atacar
     if (closestTarget) {
       this.startAttacking(closestTarget);
+    } else if (this.isAttacking && this.currentTarget) {
+      // Si estamos atacando pero el objetivo ya no está en rango, seguir moviéndonos
+      const targetWithPosition = this.currentTarget as unknown as { x: number, y: number };
+      const distance = Phaser.Math.Distance.Between(
+        this.x, 
+        this.y, 
+        targetWithPosition.x, 
+        targetWithPosition.y
+      );
+      
+      if (distance > this.attackRange) {
+        console.log('Target fuera de rango, volviendo a moverse');
+        this.stopAttacking();
+      }
     }
   }
   
@@ -408,13 +419,16 @@ export class Minion extends Phaser.GameObjects.Sprite {
     this.isAttacking = true;
     this.currentTarget = target;
     
-    // Detener el movimiento
-    this.isMoving = false;
+    // No detener el movimiento completamente, solo reducir la velocidad
+    // this.isMoving = false;
     
-    // Detener el cuerpo físico
+    // Reducir la velocidad pero no detener completamente
     const body = this.body as Phaser.Physics.Arcade.Body;
     if (body) {
-      body.setVelocity(0, 0);
+      // Reducir la velocidad a un 30% mientras ataca
+      const currentVelocityX = body.velocity.x;
+      const currentVelocityY = body.velocity.y;
+      body.setVelocity(currentVelocityX * 0.3, currentVelocityY * 0.3);
     }
     
     // Orientar hacia el objetivo
@@ -450,8 +464,16 @@ export class Minion extends Phaser.GameObjects.Sprite {
       return;
     }
     
+    // Verificar si el objetivo sigue activo en la escena
+    if (!this.currentTarget.active) {
+      console.log('Target no está activo, dejando de atacar');
+      this.stopAttacking();
+      return;
+    }
+    
     // Asegurarse de que el objetivo tiene propiedades x e y
     if (!('x' in this.currentTarget && 'y' in this.currentTarget)) {
+      console.log('Target no tiene propiedades x e y, dejando de atacar');
       this.stopAttacking();
       return;
     }
@@ -467,8 +489,15 @@ export class Minion extends Phaser.GameObjects.Sprite {
     );
     
     if (distance > this.attackRange) {
-      // Si el objetivo se alejó, dejar de atacar
+      // Si el objetivo se alejó, dejar de atacar y seguir moviéndose
+      console.log(`Target fuera de rango (${distance} > ${this.attackRange}), dejando de atacar`);
       this.stopAttacking();
+      
+      // Continuar moviéndose hacia el objetivo del path
+      if (this.pathPoints.length > 0 && this.currentPathIndex < this.pathPoints.length) {
+        this.moveToNextPoint();
+      }
+      
       return;
     }
     
@@ -710,6 +739,9 @@ export class Minion extends Phaser.GameObjects.Sprite {
       return;
     }
     
+    // Notificar a otros minions que este minion ha muerto
+    this.notifyDeathToAttackers();
+    
     // Dar oro al jugador si fue asesinado por él
     if (killedByPlayer) {
       this.showGoldText();
@@ -740,6 +772,26 @@ export class Minion extends Phaser.GameObjects.Sprite {
       // Si no hay scene.time disponible, destruir directamente
       this.destroy();
     }
+  }
+  
+  /**
+   * Notifica a otros minions que este minion ha muerto para que limpien sus targets
+   */
+  private notifyDeathToAttackers(): void {
+    if (!this.scene || !this.scene.children) return;
+    
+    // Obtener todos los minions de la escena
+    const minions = this.scene.children.getChildren().filter(
+      child => child instanceof Minion
+    ) as Minion[];
+    
+    // Notificar a cada minion que este minion ha muerto
+    minions.forEach(minion => {
+      if (minion.currentTarget === this) {
+        console.log('Notificando a un minion que su objetivo ha muerto');
+        minion.stopAttacking();
+      }
+    });
   }
   
   /**
@@ -816,6 +868,9 @@ export class Minion extends Phaser.GameObjects.Sprite {
   
   // Destrucción completa
   destroy(fromScene?: boolean): void {
+    // Notificar a otros minions que este minion ha muerto
+    this.notifyDeathToAttackers();
+    
     if (this.healthBar && this.healthBar.active) {
       this.healthBar.destroy();
     }

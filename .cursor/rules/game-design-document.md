@@ -30,6 +30,7 @@ El título elegido, **WebWarriors**, refleja la naturaleza web del juego y su en
 ##### Mecánicas de Juego  
 - **Estructura del Partido:** Dos equipos de hasta 5 jugadores compiten para destruir el Nexus enemigo, la estructura central de la base rival.  
 - **Mapa:** Un diseño 2D de 1000x1000 píxeles con tres carriles (superior, medio, inferior), cada uno con caminos para minions y torres defensivas. Los carriles conectan las bases opuestas, con áreas abiertas para movimientos estratégicos.  
+- **Unidad de Distancia:** 1 unidad de distancia equivale a 32 píxeles. Esta medida se utiliza para definir rangos de ataque, velocidades de movimiento y otras distancias en el juego.
 - **Minions:** Se generan cada 30 segundos desde cada base, con 5 minions por carril, moviéndose a 100 píxeles por segundo. Atacan minions enemigos y torres, y al llegar a la base enemiga, infligen 10 daños por segundo al Nexus hasta ser destruidos.  
 - **Torres y Estructuras:** Cada carril tiene dos torres por equipo (una cerca de la base, otra en el medio), con 1000 de salud cada una. El Nexus tiene 2000 de salud, protegido por las torres.  
 - **Progresión:** Sin sistema de ítems para simplificar; los jugadores ganan experiencia (XP) de matar minions (10 XP), jugadores enemigos (100 XP) y destruir torres (200 XP). Suben de nivel hasta 5, con umbrales de XP: nivel 2 (100 XP), nivel 3 (200 XP), nivel 4 (300 XP), nivel 5 (400 XP). Cada nivel aumenta la salud en 100 y el daño básico en 10.  
