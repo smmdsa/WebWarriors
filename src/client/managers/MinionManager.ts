@@ -370,9 +370,35 @@ export class MinionManager {
     // Limpiar minions destruidos
     this.cleanupDestroyedMinions();
     
-    // Hacer que los minions busquen objetivos entre ellos
+    // Obtener referencias a las torres y al jugador desde la escena
+    const towerManager = this.scene.towerManager || (this.scene as any).towerManager;
+    const player = this.scene.player || (this.scene as any).player;
+    
+    // Preparar la lista completa de objetivos posibles
+    let targets = [...this.minions];
+    
+    // Añadir torres si están disponibles
+    if (towerManager && typeof towerManager.getAllTowers === 'function') {
+      try {
+        const towers = towerManager.getAllTowers();
+        if (Array.isArray(towers)) {
+          targets = [...targets, ...towers];
+        }
+      } catch (error) {
+        console.error("Error al obtener torres:", error);
+      }
+    }
+    
+    // Añadir jugador si está disponible
+    if (player) {
+      targets.push(player);
+    }
+    
+    // Hacer que los minions busquen objetivos
     for (const minion of this.minions) {
-      minion.findAndAttackTargets(this.minions);
+      if (minion && minion.active && typeof minion.findAndAttackTargets === 'function') {
+        minion.findAndAttackTargets(targets);
+      }
     }
   }
   

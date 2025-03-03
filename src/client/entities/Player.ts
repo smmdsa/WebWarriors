@@ -74,6 +74,9 @@ export class Player extends Phaser.GameObjects.Sprite {
   private itemsList: Phaser.GameObjects.Text[] = [];
   private showItemsPanel: boolean = false;
   
+  // Lista de objetivos potenciales
+  private potentialTargets: Phaser.GameObjects.GameObject[] = [];
+  
   constructor(scene: Phaser.Scene, x: number, y: number, championId: string = 'warrior') {
     // Cargar el campeón seleccionado (por defecto el guerrero)
     const champion = champions[championId];
@@ -917,43 +920,49 @@ export class Player extends Phaser.GameObjects.Sprite {
   }
   
   public attack(target: any) {
-    // Verificar si ha pasado suficiente tiempo desde el último ataque
-    const currentTime = this.scene.time.now;
-    if (currentTime - this.lastAttackTime < this.attackCooldown) {
-      return; // Todavía en cooldown
-    }
+    // Verificar que el objetivo es válido
+    if (!target || !target.active) return;
     
-    // Registrar el tiempo de ataque
+    // Verificar que el objetivo tiene posición
+    if (!('x' in target) && !('y' in target)) return;
+    
+    // Verificar que el objetivo es un enemigo (minion, torre o campeón)
+    const isEnemyMinion = 'minionType' in target && target.minionType === 'enemy';
+    const isEnemyTower = 'getTeam' in target && target.getTeam() === 'enemy';
+    const isEnemyChampion = 'isEnemy' in target && target.isEnemy;
+    
+    if (!isEnemyMinion && !isEnemyTower && !isEnemyChampion) return;
+    
+    // Verificar que el objetivo está en rango
+    const distance = Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y);
+    if (distance > this.attackRange) return;
+    
+    // Verificar que ha pasado el tiempo de enfriamiento
+    const currentTime = this.scene.time.now;
+    if (currentTime - this.lastAttackTime < this.attackCooldown) return;
+    
+    // Registrar el tiempo del último ataque
     this.lastAttackTime = currentTime;
     
-    // Girar hacia el objetivo
-    this.setFlipX(target.x < this.x);
-    
-    // Aplicar daño según el tipo de ataque
-    let damage = 0;
-    
-    if (this.damageType === DamageType.PHYSICAL) {
-      damage = this.currentStats.physicalDamage;
-    } else if (this.damageType === DamageType.MAGICAL) {
-      damage = this.currentStats.magicDamage;
-    } else if (this.damageType === DamageType.TRUE) {
-      damage = this.currentStats.trueDamage;
-    }
-    
-    // Crear efecto visual según el tipo de ataque
-    if (this.attackType === AttackType.MELEE) {
-      this.createMeleeAttackEffect(target);
-    } else if (this.attackType === AttackType.RANGED) {
-      this.createRangedAttackEffect(target);
-    }
+    // Calcular daño según estadísticas
+    let damage = this.currentStats.physicalDamage;
     
     // Aplicar daño al objetivo
-    if (target.takeDamage) {
-      target.takeDamage(damage, true);
+    if ('takeDamage' in target && typeof target.takeDamage === 'function') {
+      target.takeDamage(damage);
+      
+      // Crear efecto visual según el tipo de ataque
+      if (this.attackType === AttackType.MELEE) {
+        this.createMeleeAttackEffect(target);
+      } else {
+        this.createRangedAttackEffect(target);
+      }
+      
+      // Si el objetivo es un minion, alertar a los minions aliados cercanos
+      if (isEnemyMinion) {
+        this.alertNearbyAllies(target);
+      }
     }
-    
-    // Alertar a aliados cercanos
-    this.alertNearbyAllies(target);
   }
   
   /**
@@ -1269,19 +1278,31 @@ Res: ${this.currentStats.physicalResistance} | M.Res: ${this.currentStats.magicR
    * Busca un minion en una posición específica
    */
   private findMinionAtPosition(x: number, y: number): any {
-    // Obtener todos los minions de la escena
-    const minions = this.scene.children.getChildren().filter(
-      child => child.type === 'Sprite' && 
-      ('isAlly' in child || 'isEnemy' in child)
-    ) as Phaser.GameObjects.Sprite[];
-    
-    // Buscar el minion más cercano a la posición del clic
-    const clickRadius = 20; // Radio de detección del clic
-    
-    for (const minion of minions) {
-      const distance = Phaser.Math.Distance.Between(x, y, minion.x, minion.y);
-      if (distance <= clickRadius) {
-        return minion;
+    return this.findTargetAtPosition(x, y);
+  }
+  
+  /**
+   * Actualiza la lista de objetivos potenciales
+   */
+  public updateTargets(targets: Phaser.GameObjects.GameObject[]): void {
+    this.potentialTargets = targets.filter(t => t && t !== this && t.active);
+  }
+  
+  /**
+   * Encuentra el objetivo en una posición específica
+   */
+  private findTargetAtPosition(x: number, y: number): any {
+    // Buscar entre todos los objetivos potenciales
+    for (const target of this.potentialTargets) {
+      if (!target.active) continue;
+      
+      // Asegurarse de que el objetivo tiene posición
+      if (!('x' in target) || !('y' in target)) continue;
+      
+      // Verificar si el objetivo está en la posición
+      const distance = Phaser.Math.Distance.Between(x, y, (target as any).x, (target as any).y);
+      if (distance <= 32) {  // Radio de colisión aproximado
+        return target;
       }
     }
     

@@ -1,3 +1,4 @@
+
 import Phaser from 'phaser';
 import { Tower, TowerType, Team } from '../entities/Tower';
 import { Nexus } from '../entities/Nexus';
@@ -41,7 +42,7 @@ export class TowerManager {
     this.allyTowerPositions.set('mid_2', new Phaser.Math.Vector2(401, 536));
     
     // Bottom lane
-    this.allyTowerPositions.set('bot_1', new Phaser.Math.Vector2(429, 884));
+    this.allyTowerPositions.set('bot_1', new Phaser.Math.Vector2(429, 864));
     this.allyTowerPositions.set('bot_2', new Phaser.Math.Vector2(751, 954));
     
     // Entrada al nexo
@@ -58,10 +59,10 @@ export class TowerManager {
     
     // Mid lane
     this.enemyTowerPositions.set('mid_1', new Phaser.Math.Vector2(673, 272));
-    this.enemyTowerPositions.set('mid_2', new Phaser.Math.Vector2(584, 454));
+    this.enemyTowerPositions.set('mid_2', new Phaser.Math.Vector2(604, 464));
     
     // Bottom lane
-    this.enemyTowerPositions.set('bot_1', new Phaser.Math.Vector2(881, 422));
+    this.enemyTowerPositions.set('bot_1', new Phaser.Math.Vector2(861, 422));
     this.enemyTowerPositions.set('bot_2', new Phaser.Math.Vector2(929, 752));
     
     // Entrada al nexo

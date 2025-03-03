@@ -191,21 +191,35 @@ export class MainScene extends Phaser.Scene {
     // Actualizar colisionadores de minions
     this.updateMinionsColliders();
     
+    // Preparar lista de objetivos para interacciones
+    const allTargets = [
+      ...this.minionManager.getAllMinions(),
+      ...this.towerManager.getAllTowers(),
+      ...this.towerManager.getAllNexuses()
+    ];
+    
+    // Añadir al jugador a la lista de objetivos si está disponible
+    if (this.player) {
+      allTargets.push(this.player);
+    }
+    
+    // Pasar la lista de objetivos al jugador
+    if (this.player) {
+      // El player necesita referencias a todos los posibles objetivos
+      (this.player as any).updateTargets?.(allTargets);
+    }
+    
     // Actualizar el gestor de minions
     this.minionManager.update();
+    
+    // Actualizar el gestor de torres con la lista completa de objetivos
+    this.towerManager.update(time, delta, allTargets);
     
     // Actualizar el HUD del jugador
     this.playerHUD.update();
     
     // Actualizar la herramienta de nivel
     this.levelTool.update();
-    
-    // Actualizar torres
-    const targets = [
-      ...this.minionManager.getAllMinions(),
-      this.player
-    ];
-    this.towerManager.update(time, delta, targets);
   }
   
   private updateZoomText(): void {
@@ -465,6 +479,15 @@ export class MainScene extends Phaser.Scene {
     // Añadir los minions existentes al grupo de física
     this.updateMinionsColliders();
     
+    // Obtener torres
+    const towers = this.towerManager.getAllTowers();
+    const towersGroup = this.physics.add.group();
+    
+    // Añadir torres al grupo de física
+    for (const tower of towers) {
+      towersGroup.add(tower);
+    }
+    
     // Configurar colisión entre jugador y minions con menor intensidad
     this.physics.add.collider(
       this.player, 
@@ -473,6 +496,18 @@ export class MainScene extends Phaser.Scene {
       (player, minion) => {
         // Reducir el efecto de la colisión entre jugador y minions
         // El jugador puede empujar a los minions
+        return true;
+      },
+      this
+    );
+    
+    // Configurar colisión entre jugador y torres
+    this.physics.add.collider(
+      this.player,
+      towersGroup,
+      undefined,
+      (player, tower) => {
+        // Las torres son objetos inmóviles
         return true;
       },
       this
@@ -501,6 +536,18 @@ export class MainScene extends Phaser.Scene {
         // Si son de tipos diferentes, mantener la colisión pero con 20% de probabilidad de pasar
         return Math.random() > 0.2;
       }
+    );
+    
+    // Configurar colisión entre minions y torres
+    this.physics.add.collider(
+      this.minionsGroup,
+      towersGroup,
+      undefined,
+      (minion, tower) => {
+        // Las torres son objetos inmóviles, los minions deben respetarlas
+        return true;
+      },
+      this
     );
   }
   
@@ -586,6 +633,13 @@ export class MainScene extends Phaser.Scene {
           
         case 'show-tower-positions':
           (window as any).showTowerPositions();
+          break;
+          
+        case 'debug-tower-detection':
+          // Nuevo comando para activar/desactivar la visualización de detección
+          const showDetection = args[0] !== 'off'; // Si no es 'off', se activa
+          console.log(`Depuración de detección de torres ${showDetection ? 'activada' : 'desactivada'}`);
+          // La visualización automática ya está implementada en la clase Tower
           break;
           
         default:

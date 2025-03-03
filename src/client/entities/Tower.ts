@@ -16,7 +16,7 @@ export class Tower extends Phaser.GameObjects.Container {
   private health: number = 6000;
   private attackRange: number = 128; // 4 unidades (1 unidad = 32 píxeles), reducido de 5 unidades
   private attackCooldown: number = 3000; // 3 segundos
-  private attackDamage: number = 150;
+  private attackDamage: number = 100;
   private lastAttackTime: number = 0;
   private rangeCircle: Phaser.GameObjects.Graphics;
   private healthBar: Phaser.GameObjects.Graphics;
@@ -26,6 +26,7 @@ export class Tower extends Phaser.GameObjects.Container {
   private isDestroyed: boolean = false;
   private id: string;
   private sprite: Phaser.GameObjects.Rectangle;
+  private attackLine: Phaser.GameObjects.Graphics | null = null;
 
   constructor(
     scene: Phaser.Scene,
@@ -41,13 +42,34 @@ export class Tower extends Phaser.GameObjects.Container {
     this.towerType = towerType;
     this.id = id;
     
-    // Crear sprite rectangular para la torre
-    this.sprite = scene.add.rectangle(0, 0, 32, 32, team === Team.ALLY ? 0x0000ff : 0xff0000);
+    // Configurar la torre según su tipo
+    switch (towerType) {
+      case TowerType.NEXUS_GUARDIAN:
+        this.maxHealth = 8000;
+        this.health = 8000;
+        this.attackDamage = 120;
+        break;
+      case TowerType.NEXUS_ENTRANCE:
+        this.maxHealth = 7000;
+        this.health = 7000;
+        this.attackDamage = 110;
+        break;
+      case TowerType.LANE:
+      default:
+        this.maxHealth = 6000;
+        this.health = 6000;
+        break;
+    }
+    
+    // Crear el sprite rectangular para la torre
+    this.sprite = scene.add.rectangle(0, 0, 40, 40, team === Team.ALLY ? 0x0000ff : 0xff0000);
     this.add(this.sprite);
     
-    // Crear círculo de rango
+    // Crear círculo de rango de ataque (inicialmente invisible)
     this.rangeCircle = scene.add.graphics();
+    this.rangeCircle.setDepth(0);
     this.rangeCircle.setVisible(false);
+    this.updateRangeCircle();
     
     // Crear barra de salud
     this.healthBar = scene.add.graphics();
@@ -57,6 +79,28 @@ export class Tower extends Phaser.GameObjects.Container {
     
     // Actualizar la barra de salud
     this.updateHealthBar();
+    
+    // Activar la física para la torre con configuración mejorada
+    if (scene.physics && scene.physics.world) {
+      scene.physics.world.enable(this);
+      const body = this.body as Phaser.Physics.Arcade.Body;
+      if (body) {
+        body.setImmovable(true);
+        body.setCircle(20); // Radio ajustado al tamaño de la torre
+        body.setCollideWorldBounds(true);
+        
+        // Configuración adicional para asegurar que sea completamente estática
+        body.allowGravity = false;
+        body.pushable = false; // Asegurar que no pueda ser empujada
+        body.moves = false; // No se mueve por sí misma
+        
+        // Eliminar cualquier velocidad o aceleración residual
+        body.setVelocity(0, 0);
+        body.setAcceleration(0, 0);
+        body.setDrag(0, 0);
+        body.setBounce(0, 0);
+      }
+    }
   }
   
   public getTeam(): Team {
@@ -184,46 +228,150 @@ export class Tower extends Phaser.GameObjects.Container {
       this.updateRangeCircle();
     }
     
-    // Comprobar si podemos atacar
+    // Si ya tenemos un objetivo, verificar si sigue siendo válido
+    if (this.attackTarget && this.attackTarget.active && 
+        'x' in this.attackTarget && 'y' in this.attackTarget) {
+      
+      // Comprobar si el objetivo sigue dentro del rango
+      const distance = Phaser.Math.Distance.Between(
+        this.x, this.y, 
+        (this.attackTarget as any).x, (this.attackTarget as any).y
+      );
+      
+      if (distance <= this.attackRange) {
+        // El objetivo sigue siendo válido, continuar atacándolo
+        if (time - this.lastAttackTime >= this.attackCooldown) {
+          this.attack(time);
+        }
+        return; // No buscar nuevos objetivos mientras tengamos uno válido
+      } else {
+        // El objetivo se ha salido del rango, limpiar
+        console.log(`Torre ${this.id} (${this.team}): Objetivo fuera de rango, buscando nuevo objetivo`);
+        this.attackTarget = null;
+      }
+    } else if (this.attackTarget) {
+      // El objetivo ya no es válido (probablemente fue destruido)
+      console.log(`Torre ${this.id} (${this.team}): Objetivo destruido o no válido, buscando nuevo objetivo`);
+      this.attackTarget = null;
+    }
+    
+    // Comprobar si podemos atacar un nuevo objetivo
     if (time - this.lastAttackTime >= this.attackCooldown) {
       this.findAndAttackTarget(time, targets);
     }
   }
   
   private findAndAttackTarget(time: number, targets: Phaser.GameObjects.GameObject[]): void {
-    // Buscar el objetivo más cercano dentro del rango
-    let closestTarget = null;
-    let closestDistance = this.attackRange;
+    // Filtrar objetivos válidos (con posición y equipo)
+    const validTargets = targets.filter(target => {
+      return target.active && 
+        'x' in target && 
+        'y' in target && 
+        // Verificar si es un enemigo basado en equipo
+        (
+          ('getTeam' in target && (target as any).getTeam() !== this.team) ||
+          ('team' in target && (target as any).team !== this.team) ||
+          ('minionType' in target && 
+            ((this.team === Team.ALLY && (target as any).minionType === 'enemy') ||
+             (this.team === Team.ENEMY && (target as any).minionType === 'ally'))
+          )
+        );
+    });
     
-    for (const target of targets) {
-      // Verificar que el objetivo tenga posición y equipo
-      if (!target.active || !('x' in target) || !('y' in target) || !('getTeam' in target)) continue;
-      
-      // Verificar que el objetivo sea del equipo contrario
-      const targetTeam = (target as any).getTeam();
-      if (targetTeam === this.team) continue;
-      
-      // Calcular distancia
-      const distance = Phaser.Math.Distance.Between(this.x, this.y, (target as any).x, (target as any).y);
-      
-      // Si está dentro del rango y es más cercano que el objetivo actual
-      if (distance <= this.attackRange && (closestTarget === null || distance < closestDistance)) {
-        closestTarget = target;
-        closestDistance = distance;
+    // Debug: mostrar cuántos objetivos válidos hay
+    console.log(`Torre ${this.id} (${this.team}): Detectados ${validTargets.length} objetivos válidos`);
+    
+    // Variable para rastrear si hay algún enemigo dentro del rango
+    let enemyInRange = false;
+    
+    if (validTargets.length === 0) {
+      // Si no hay objetivos válidos, ocultar el rango
+      this.showRange(false);
+      return;
+    }
+    
+    // Separar minions y campeones usando una detección más robusta
+    const minions = validTargets.filter(target => 
+      'minionType' in target || 
+      'subtype' in target || 
+      (target.constructor && (target.constructor as any).name === 'Minion')
+    );
+    
+    const champions = validTargets.filter(target => 
+      !minions.includes(target) && (
+        'champion' in target || 
+        (target.constructor && (target.constructor as any).name === 'Player')
+      )
+    );
+    
+    // Debug: mostrar cuántos minions y campeones hay
+    console.log(`Torre ${this.id} (${this.team}): Detectados ${minions.length} minions y ${champions.length} campeones`);
+    
+    // Buscar primero entre los minions
+    let targetToAttack = this.findClosestTargetInRange(minions);
+    
+    // Si no hay minions en rango, buscar entre los campeones
+    if (!targetToAttack) {
+      targetToAttack = this.findClosestTargetInRange(champions);
+    }
+    
+    // Comprobar si hay algún enemigo dentro del rango (para mostrar visual)
+    if (targetToAttack) {
+      enemyInRange = true;
+      console.log(`Torre ${this.id} (${this.team}): Objetivo encontrado para atacar`);
+    } else {
+      // Comprobar manualmente si hay enemigos dentro del rango
+      for (const target of validTargets) {
+        const distance = Phaser.Math.Distance.Between(this.x, this.y, (target as any).x, (target as any).y);
+        if (distance <= this.attackRange) {
+          enemyInRange = true;
+          console.log(`Torre ${this.id} (${this.team}): Enemigo dentro del rango pero no seleccionado como objetivo`);
+          break;
+        }
       }
     }
     
+    // Mostrar el rango si hay enemigos cercanos
+    this.showRange(enemyInRange);
+    
     // Si encontramos un objetivo, atacarlo
-    if (closestTarget !== null) {
-      this.attackTarget = closestTarget;
+    if (targetToAttack) {
+      this.attackTarget = targetToAttack;
       this.attack(time);
     } else {
       this.attackTarget = null;
     }
   }
   
+  private findClosestTargetInRange(targets: Phaser.GameObjects.GameObject[]): Phaser.GameObjects.GameObject | null {
+    if (targets.length === 0) return null;
+    
+    let closestTarget = null;
+    let closestDistance = this.attackRange;
+    
+    for (const target of targets) {
+      // Calcular distancia
+      const distance = Phaser.Math.Distance.Between(this.x, this.y, (target as any).x, (target as any).y);
+      
+      // Debug: mostrar distancia a cada objetivo
+      console.log(`Torre ${this.id} (${this.team}): Distancia a objetivo: ${distance}, rango de ataque: ${this.attackRange}`);
+      
+      // Si está dentro del rango y es más cercano que el objetivo actual
+      if (distance <= this.attackRange && (closestTarget === null || distance < closestDistance)) {
+        closestTarget = target;
+        closestDistance = distance;
+        console.log(`Torre ${this.id} (${this.team}): Nuevo objetivo más cercano encontrado a distancia ${distance}`);
+      }
+    }
+    
+    return closestTarget;
+  }
+  
   private attack(time: number): void {
     if (!this.attackTarget || !this.attackTarget.active) return;
+    
+    // Debug: mostrar información sobre el ataque
+    console.log(`Torre ${this.id} (${this.team}) está atacando a un objetivo en posición ${(this.attackTarget as any).x}, ${(this.attackTarget as any).y}`);
     
     // Registrar el tiempo del último ataque
     this.lastAttackTime = time;
@@ -240,21 +388,35 @@ export class Tower extends Phaser.GameObjects.Container {
   private createAttackEffect(): void {
     if (!this.attackTarget || !this.scene) return;
     
-    // Crear línea de ataque
-    const graphics = this.scene.add.graphics();
-    graphics.lineStyle(2, this.team === Team.ALLY ? 0x0088ff : 0xff8800, 1);
-    graphics.beginPath();
-    graphics.moveTo(this.x, this.y);
-    graphics.lineTo((this.attackTarget as any).x, (this.attackTarget as any).y);
-    graphics.strokePath();
+    // Eliminar la línea anterior si existe
+    if (this.attackLine) {
+      this.attackLine.destroy();
+      this.attackLine = null;
+    }
     
-    // Animar desvanecimiento
+    // Crear línea de ataque permanente
+    this.attackLine = this.scene.add.graphics();
+    this.attackLine.lineStyle(2, this.team === Team.ALLY ? 0x0088ff : 0xff8800, 1);
+    this.attackLine.beginPath();
+    this.attackLine.moveTo(this.x, this.y);
+    this.attackLine.lineTo((this.attackTarget as any).x, (this.attackTarget as any).y);
+    this.attackLine.strokePath();
+    
+    // Crear efecto de destello
+    const flashGraphics = this.scene.add.graphics();
+    flashGraphics.lineStyle(3, 0xffffff, 0.8);
+    flashGraphics.beginPath();
+    flashGraphics.moveTo(this.x, this.y);
+    flashGraphics.lineTo((this.attackTarget as any).x, (this.attackTarget as any).y);
+    flashGraphics.strokePath();
+    
+    // Animar el destello
     this.scene.tweens.add({
-      targets: graphics,
+      targets: flashGraphics,
       alpha: 0,
       duration: 200,
       onComplete: () => {
-        graphics.destroy();
+        flashGraphics.destroy();
       }
     });
   }

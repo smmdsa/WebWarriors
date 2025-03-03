@@ -360,18 +360,72 @@ export class Minion extends Phaser.GameObjects.Sprite {
   public findAndAttackTargets(targets: Phaser.GameObjects.GameObject[]): void {
     // Filtrar objetivos enemigos
     const enemyTargets = targets.filter(target => {
+      if (!target.active) return false;
+      
       if (this.minionType === MinionType.ALLY) {
-        return 'isEnemy' in target && target.isEnemy;
+        return ('getTeam' in target && (target as any).getTeam() === 'enemy') || 
+               ('isEnemy' in target && (target as any).isEnemy);
       } else {
-        return 'isAlly' in target && target.isAlly;
+        return ('getTeam' in target && (target as any).getTeam() === 'ally') || 
+               ('isAlly' in target && (target as any).isAlly);
       }
     });
     
-    // Buscar el objetivo más cercano dentro del rango de ataque
+    if (enemyTargets.length === 0) return;
+    
+    // Separar por tipo de objetivo para establecer prioridades
+    const enemyMinions = enemyTargets.filter(target => 'subtype' in target);
+    const enemyTowers = enemyTargets.filter(target => 'getTowerType' in target);
+    const enemyChampions = enemyTargets.filter(target => 
+      !('subtype' in target) && 
+      !('getTowerType' in target) && 
+      ('champion' in target || ('isAlly' in target || 'isEnemy' in target))
+    );
+    
+    // Buscar el objetivo más cercano dentro del rango, con prioridad:
+    // 1. Minions enemigos
+    // 2. Torres enemigas
+    // 3. Campeones enemigos
+    let targetToAttack = this.findClosestTargetInRange(enemyMinions);
+    
+    if (!targetToAttack) {
+      targetToAttack = this.findClosestTargetInRange(enemyTowers);
+    }
+    
+    if (!targetToAttack) {
+      targetToAttack = this.findClosestTargetInRange(enemyChampions);
+    }
+    
+    // Si encontramos un objetivo, comenzar a atacar
+    if (targetToAttack) {
+      this.startAttacking(targetToAttack);
+    } else if (this.isAttacking && this.currentTarget) {
+      // Si estamos atacando pero el objetivo ya no está en rango, seguir moviéndonos
+      const targetWithPosition = this.currentTarget as unknown as { x: number, y: number };
+      const distance = Phaser.Math.Distance.Between(
+        this.x, 
+        this.y, 
+        targetWithPosition.x, 
+        targetWithPosition.y
+      );
+      
+      if (distance > this.attackRange) {
+        console.log('Target fuera de rango, volviendo a moverse');
+        this.stopAttacking();
+      }
+    }
+  }
+  
+  /**
+   * Encuentra el objetivo más cercano dentro del rango de ataque
+   */
+  private findClosestTargetInRange(targets: Phaser.GameObjects.GameObject[]): Phaser.GameObjects.GameObject | null {
+    if (targets.length === 0) return null;
+    
     let closestTarget = null;
     let closestDistance = Infinity;
     
-    for (const target of enemyTargets) {
+    for (const target of targets) {
       // Asegurarse de que el objetivo tiene propiedades x e y
       if ('x' in target && 'y' in target) {
         const targetWithPosition = target as unknown as { x: number, y: number };
@@ -389,24 +443,7 @@ export class Minion extends Phaser.GameObjects.Sprite {
       }
     }
     
-    // Si encontramos un objetivo, comenzar a atacar
-    if (closestTarget) {
-      this.startAttacking(closestTarget);
-    } else if (this.isAttacking && this.currentTarget) {
-      // Si estamos atacando pero el objetivo ya no está en rango, seguir moviéndonos
-      const targetWithPosition = this.currentTarget as unknown as { x: number, y: number };
-      const distance = Phaser.Math.Distance.Between(
-        this.x, 
-        this.y, 
-        targetWithPosition.x, 
-        targetWithPosition.y
-      );
-      
-      if (distance > this.attackRange) {
-        console.log('Target fuera de rango, volviendo a moverse');
-        this.stopAttacking();
-      }
-    }
+    return closestTarget;
   }
   
   /**

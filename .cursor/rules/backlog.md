@@ -104,6 +104,8 @@ A continuación, te presento el **backlog detallado de tareas**, organizado en f
     - Crear sprites para torres (salud: 1000) y posicionarlas (dos por carril por equipo).
     - Programar ataque automático a minions y personajes enemigos dentro del rango.
     - Implementar destrucción de torres cuando su salud llegue a 0.
+    - ⚠️ **Problema pendiente:** Las torres actualmente no disparan correctamente a minions ni al jugador enemigo.
+    - ✅ Ajuste realizado: Las torres ya tienen física y son completamente inmóviles.
 
 11. **Crear personajes jugables (20 personajes, mínimo 2 por rol)**
     - Definir roles: Tanque, Dealer de Daño, Soporte, Asesino, Mago (mínimo 2 por rol, total 20).
