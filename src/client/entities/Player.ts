@@ -12,6 +12,9 @@ import { PlayerStats } from '../types/Player';
 import { Item, items as itemsData } from '../data/items';
 
 export class Player extends Phaser.GameObjects.Sprite {
+  // Identificación del tipo
+  public isPlayer: boolean = true;
+  
   // Movimiento
   private targetPosition: Phaser.Math.Vector2 | null = null;
   private isMoving: boolean = false;
@@ -77,6 +80,12 @@ export class Player extends Phaser.GameObjects.Sprite {
   // Lista de objetivos potenciales
   private potentialTargets: Phaser.GameObjects.GameObject[] = [];
   
+  // Estado de muerte
+  private isDead: boolean = false;
+  private respawnTimer: Phaser.Time.TimerEvent | null = null;
+  private respawnCountdownText: Phaser.GameObjects.Text | null = null;
+  private initialPosition: Phaser.Math.Vector2;
+  
   constructor(scene: Phaser.Scene, x: number, y: number, championId: string = 'warrior') {
     // Cargar el campeón seleccionado (por defecto el guerrero)
     const champion = champions[championId];
@@ -100,22 +109,25 @@ export class Player extends Phaser.GameObjects.Sprite {
     // Configurar habilidades
     this.skills = [...this.champion.skills];
     
-    // Inicializar estadísticas base desde el campeón
+    // Configurar estadísticas base
     this.baseStats = {
-      moveSpeed: this.champion.baseStats.moveSpeed,
-      physicalDamage: this.champion.baseStats.attackDamage,
-      magicDamage: this.champion.baseStats.abilityPower,
+      maxHealth: selectedChampion.baseStats.maxHealth,
+      health: selectedChampion.baseStats.health,
+      maxMana: selectedChampion.baseStats.maxMana,
+      mana: selectedChampion.baseStats.mana,
+      physicalDamage: selectedChampion.baseStats.attackDamage,
+      magicDamage: selectedChampion.baseStats.abilityPower,
       trueDamage: 0,
-      health: this.champion.baseStats.health,
-      maxHealth: this.champion.baseStats.maxHealth,
-      mana: this.champion.baseStats.mana,
-      maxMana: this.champion.baseStats.maxMana,
-      physicalResistance: this.champion.baseStats.physicalResistance,
-      magicResistance: this.champion.baseStats.magicResistance
+      physicalResistance: selectedChampion.baseStats.physicalResistance,
+      magicResistance: selectedChampion.baseStats.magicResistance,
+      moveSpeed: selectedChampion.baseStats.moveSpeed
     };
     
     // Inicializar estadísticas actuales
     this.currentStats = { ...this.baseStats };
+    
+    // Guardar posición inicial para respawn
+    this.initialPosition = new Phaser.Math.Vector2(x, y);
     
     // Añadir el sprite a la escena
     scene.add.existing(this);
@@ -600,7 +612,7 @@ export class Player extends Phaser.GameObjects.Sprite {
           enemy.takeDamage(damage, true);
           
           // Crear efecto visual
-          this.createDamageEffect(enemy, damageType);
+          this.createDamageVisualEffect(enemy, damageType);
         }
       }
     } else {
@@ -622,7 +634,7 @@ export class Player extends Phaser.GameObjects.Sprite {
         enemy.takeDamage(damage, true);
         
         // Crear efecto visual
-        this.createDamageEffect(enemy, damageType);
+        this.createDamageVisualEffect(enemy, damageType);
       }
     }
   }
@@ -668,7 +680,7 @@ export class Player extends Phaser.GameObjects.Sprite {
   /**
    * Crea un efecto visual de daño
    */
-  private createDamageEffect(target: any, damageType: DamageType) {
+  private createDamageVisualEffect(target: any, damageType: DamageType) {
     // Color según tipo de daño
     let color = 0xffffff;
     if (damageType === DamageType.PHYSICAL) {
@@ -920,6 +932,9 @@ export class Player extends Phaser.GameObjects.Sprite {
   }
   
   public attack(target: any) {
+    // Verificar que el jugador no está muerto
+    if (this.isDead) return;
+    
     // Verificar que el objetivo es válido
     if (!target || !target.active) return;
     
@@ -1285,24 +1300,37 @@ Res: ${this.currentStats.physicalResistance} | M.Res: ${this.currentStats.magicR
    * Actualiza la lista de objetivos potenciales
    */
   public updateTargets(targets: Phaser.GameObjects.GameObject[]): void {
-    this.potentialTargets = targets.filter(t => t && t !== this && t.active);
+    // Filtrar targets para eliminar cualquier referencia al propio jugador y objetivos inactivos
+    this.potentialTargets = targets.filter(target => 
+      target !== this && 
+      target.active && 
+      (
+        // Es un minion enemigo
+        ('minionType' in target && target.minionType === 'enemy') ||
+        // Es una torre enemiga
+        ('getTeam' in target && (target as any).getTeam() === 'enemy') ||
+        // Es otro tipo de enemigo
+        ('isEnemy' in target && (target as any).isEnemy)
+      )
+    );
   }
   
   /**
-   * Encuentra el objetivo en una posición específica
+   * Encuentra un objetivo en la posición indicada
    */
   private findTargetAtPosition(x: number, y: number): any {
-    // Buscar entre todos los objetivos potenciales
+    if (!this.potentialTargets || this.potentialTargets.length === 0) return null;
+    
+    const maxDistance = 32; // Distancia máxima para considerar que un click ha sido sobre un objetivo
+    
     for (const target of this.potentialTargets) {
       if (!target.active) continue;
       
-      // Asegurarse de que el objetivo tiene posición
-      if (!('x' in target) || !('y' in target)) continue;
-      
-      // Verificar si el objetivo está en la posición
-      const distance = Phaser.Math.Distance.Between(x, y, (target as any).x, (target as any).y);
-      if (distance <= 32) {  // Radio de colisión aproximado
-        return target;
+      if ('x' in target && 'y' in target) {
+        const distance = Phaser.Math.Distance.Between(x, y, (target as any).x, (target as any).y);
+        if (distance <= maxDistance) {
+          return target;
+        }
       }
     }
     
@@ -1569,5 +1597,236 @@ Res: ${this.currentStats.physicalResistance} | M.Res: ${this.currentStats.magicR
    */
   public getChampion(): ChampionDefinition {
     return this.champion;
+  }
+  
+  /**
+   * Recibe daño de fuentes enemigas
+   */
+  public takeDamage(amount: number): void {
+    // Si el jugador está muerto, no puede recibir daño
+    if (this.isDead) return;
+    
+    // Aplicar defensa física o mágica según corresponda
+    // Por simplicidad, asumimos que el 70% del daño es mitigado por las defensas
+    const mitigatedAmount = amount * (1 - (this.currentStats.physicalResistance / 1000));
+    
+    // Aplicar el daño a la salud
+    this.currentStats.health -= mitigatedAmount;
+    
+    // Actualizar barra de salud
+    this.updateBars();
+    
+    // Comprobar si el jugador ha muerto
+    if (this.currentStats.health <= 0) {
+      this.die();
+    } else {
+      // Crear efecto visual de daño
+      this.createDamageReceivedEffect();
+    }
+    
+    // Mostrar cantidad de daño recibido
+    this.showDamageText(mitigatedAmount);
+  }
+  
+  /**
+   * Gestiona la muerte del jugador
+   */
+  private die(): void {
+    // Marcar como muerto
+    this.isDead = true;
+    
+    // Detener movimiento
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (body) {
+      body.setVelocity(0, 0);
+    }
+    this.isMoving = false;
+    this.targetPosition = null;
+    
+    // Efecto visual de muerte
+    this.createDeathEffect();
+    
+    // Calcular tiempo de respawn basado en el nivel
+    let respawnTime = 0;
+    
+    if (this.level <= 5) {
+      respawnTime = 5000; // 5 segundos para niveles 1-5
+    } else if (this.level <= 10) {
+      respawnTime = 10000 + (this.level - 5) * 4000; // 10-30 segundos para niveles 6-10
+    } else if (this.level <= 15) {
+      respawnTime = 30000 + (this.level - 10) * 6000; // 30-60 segundos para niveles 11-15
+    } else {
+      respawnTime = 60000 + (this.level - 15) * 6000; // 60-90 segundos para niveles 16-20
+    }
+    
+    // Mostrar cuenta regresiva
+    this.showRespawnCountdown(respawnTime);
+    
+    // Configurar temporizador de respawn
+    this.respawnTimer = this.scene.time.delayedCall(respawnTime, this.respawn, [], this);
+    
+    // Ocultar elementos visuales
+    this.setAlpha(0.3);
+    if (this.healthBar) this.healthBar.setVisible(false);
+    if (this.manaBar) this.manaBar.setVisible(false);
+  }
+  
+  /**
+   * Resucita al jugador
+   */
+  private respawn(): void {
+    // Resetear estado de muerte
+    this.isDead = false;
+    
+    // Restaurar vida y mana
+    this.currentStats.health = this.currentStats.maxHealth;
+    this.currentStats.mana = this.currentStats.maxMana;
+    
+    // Actualizar barras
+    this.updateBars();
+    
+    // Restaurar visibilidad
+    this.setAlpha(1);
+    if (this.healthBar) this.healthBar.setVisible(true);
+    if (this.manaBar) this.manaBar.setVisible(true);
+    
+    // Regresar a posición inicial
+    this.x = this.initialPosition.x;
+    this.y = this.initialPosition.y;
+    
+    // Eliminar texto de cuenta regresiva
+    if (this.respawnCountdownText) {
+      this.respawnCountdownText.destroy();
+      this.respawnCountdownText = null;
+    }
+    
+    // Efecto visual de respawn
+    this.createRespawnEffect();
+  }
+  
+  /**
+   * Muestra el temporizador de respawn
+   */
+  private showRespawnCountdown(respawnTime: number): void {
+    // Eliminar texto anterior si existe
+    if (this.respawnCountdownText) {
+      this.respawnCountdownText.destroy();
+    }
+    
+    // Crear texto de cuenta regresiva
+    this.respawnCountdownText = this.scene.add.text(
+      this.x,
+      this.y - 50,
+      `Respawn: ${Math.ceil(respawnTime / 1000)}`,
+      {
+        fontSize: '16px',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 3
+      }
+    );
+    this.respawnCountdownText.setOrigin(0.5);
+    
+    // Actualizar cada segundo
+    const updateInterval = 1000; // 1 segundo
+    let remainingTime = respawnTime;
+    
+    const updateCountdown = () => {
+      remainingTime -= updateInterval;
+      if (remainingTime <= 0 || !this.respawnCountdownText) return;
+      
+      this.respawnCountdownText.setText(`Respawn: ${Math.ceil(remainingTime / 1000)}`);
+      this.respawnCountdownText.setPosition(this.x, this.y - 50);
+      
+      this.scene.time.delayedCall(updateInterval, updateCountdown, [], this);
+    };
+    
+    // Iniciar actualización
+    this.scene.time.delayedCall(updateInterval, updateCountdown, [], this);
+  }
+  
+  /**
+   * Crea un efecto visual de daño recibido
+   */
+  private createDamageReceivedEffect(): void {
+    // Parpadeo rojo
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 0.5,
+      duration: 100,
+      yoyo: true,
+      repeat: 1,
+      onComplete: () => {
+        this.setAlpha(1);
+      }
+    });
+  }
+  
+  /**
+   * Crea un efecto visual para la muerte
+   */
+  private createDeathEffect(): void {
+    // Crear efecto de explosión
+    const deathEffect = this.scene.add.graphics();
+    deathEffect.fillStyle(0xff0000, 0.7);
+    deathEffect.fillCircle(this.x, this.y, 30);
+    
+    this.scene.tweens.add({
+      targets: deathEffect,
+      alpha: 0,
+      scale: 2,
+      duration: 800,
+      onComplete: () => {
+        deathEffect.destroy();
+      }
+    });
+  }
+  
+  /**
+   * Crea un efecto visual para el respawn
+   */
+  private createRespawnEffect(): void {
+    // Crear efecto de aparición
+    const respawnEffect = this.scene.add.graphics();
+    respawnEffect.fillStyle(0x00ff00, 0.5);
+    respawnEffect.fillCircle(this.x, this.y, 40);
+    
+    this.scene.tweens.add({
+      targets: respawnEffect,
+      alpha: 0,
+      scale: 1.5,
+      duration: 1000,
+      onComplete: () => {
+        respawnEffect.destroy();
+      }
+    });
+  }
+  
+  /**
+   * Muestra texto con la cantidad de daño recibido
+   */
+  private showDamageText(amount: number): void {
+    const damageText = this.scene.add.text(
+      this.x + Phaser.Math.Between(-20, 20),
+      this.y - 20,
+      `-${Math.round(amount)}`,
+      {
+        fontSize: '16px',
+        color: '#ff0000',
+        stroke: '#000000',
+        strokeThickness: 3
+      }
+    );
+    damageText.setOrigin(0.5);
+    
+    this.scene.tweens.add({
+      targets: damageText,
+      y: damageText.y - 30,
+      alpha: 0,
+      duration: 1000,
+      onComplete: () => {
+        damageText.destroy();
+      }
+    });
   }
 } 

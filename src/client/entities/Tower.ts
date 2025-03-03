@@ -27,6 +27,7 @@ export class Tower extends Phaser.GameObjects.Container {
   private id: string;
   private sprite: Phaser.GameObjects.Rectangle;
   private attackLine: Phaser.GameObjects.Graphics | null = null;
+  private goldValue: number = 300;
 
   constructor(
     scene: Phaser.Scene,
@@ -136,7 +137,16 @@ export class Tower extends Phaser.GameObjects.Container {
     
     // Comprobar si la torre ha sido destruida
     if (this.health <= 0) {
+      // Distribuir oro
+      this.distributeGold();
+      
+      // Marcar como destruida
       this.destroy();
+      
+      // Emitir evento de torre destruida
+      if (this.scene) {
+        this.scene.events.emit('tower-destroyed', this);
+      }
     }
   }
   
@@ -152,11 +162,6 @@ export class Tower extends Phaser.GameObjects.Container {
     
     if (this.healthBar) {
       this.healthBar.destroy();
-    }
-    
-    // Emitir evento de torre destruida
-    if (this.scene) {
-      this.scene.events.emit('tower-destroyed', this);
     }
     
     // Llamar al método destroy de Phaser
@@ -262,71 +267,69 @@ export class Tower extends Phaser.GameObjects.Container {
   }
   
   private findAndAttackTarget(time: number, targets: Phaser.GameObjects.GameObject[]): void {
-    // Filtrar objetivos válidos (con posición y equipo)
+    if (targets.length === 0) return;
+    
+    // Filtrar para obtener solo objetivos válidos (minions enemigos, jugadores enemigos)
     const validTargets = targets.filter(target => {
-      return target.active && 
-        'x' in target && 
-        'y' in target && 
-        // Verificar si es un enemigo basado en equipo
-        (
-          ('getTeam' in target && (target as any).getTeam() !== this.team) ||
-          ('team' in target && (target as any).team !== this.team) ||
-          ('minionType' in target && 
-            ((this.team === Team.ALLY && (target as any).minionType === 'enemy') ||
-             (this.team === Team.ENEMY && (target as any).minionType === 'ally'))
-          )
-        );
+      if (!target.active) return false;
+      
+      // Verificar que el objetivo tiene posición
+      if (!('x' in target) || !('y' in target)) return false;
+      
+      // Clasificar el tipo de objetivo
+      const isEnemyMinion = 'minionType' in target && (target as any).minionType === 'enemy' && this.team === Team.ALLY;
+      const isAllyMinion = 'minionType' in target && (target as any).minionType === 'ally' && this.team === Team.ENEMY;
+      
+      // Para jugadores, verificar si el equipo es opuesto a la torre
+      const isEnemyPlayer = 'isPlayer' in target && (target as any).isPlayer === true;
+      let isPlayerValidTarget = false;
+      
+      if (isEnemyPlayer) {
+        // El jugador siempre es aliado, así que solo las torres enemigas lo atacan
+        isPlayerValidTarget = (this.team === Team.ENEMY);
+      }
+      
+      return isEnemyMinion || isAllyMinion || isPlayerValidTarget;
     });
     
-    // Debug: mostrar cuántos objetivos válidos hay
-    console.log(`Torre ${this.id} (${this.team}): Detectados ${validTargets.length} objetivos válidos`);
-    
-    // Variable para rastrear si hay algún enemigo dentro del rango
-    let enemyInRange = false;
-    
+    // Si no hay objetivos válidos, no hacer nada
     if (validTargets.length === 0) {
-      // Si no hay objetivos válidos, ocultar el rango
       this.showRange(false);
       return;
     }
     
-    // Separar minions y campeones usando una detección más robusta
-    const minions = validTargets.filter(target => 
-      'minionType' in target || 
-      'subtype' in target || 
-      (target.constructor && (target.constructor as any).name === 'Minion')
-    );
+    // Si ya tenemos un objetivo, verificar si sigue siendo válido (vivo y dentro del rango)
+    let targetToAttack = null;
+    let enemyInRange = false;
     
-    const champions = validTargets.filter(target => 
-      !minions.includes(target) && (
-        'champion' in target || 
-        (target.constructor && (target.constructor as any).name === 'Player')
-      )
-    );
-    
-    // Debug: mostrar cuántos minions y campeones hay
-    console.log(`Torre ${this.id} (${this.team}): Detectados ${minions.length} minions y ${champions.length} campeones`);
-    
-    // Buscar primero entre los minions
-    let targetToAttack = this.findClosestTargetInRange(minions);
-    
-    // Si no hay minions en rango, buscar entre los campeones
-    if (!targetToAttack) {
-      targetToAttack = this.findClosestTargetInRange(champions);
+    if (this.attackTarget && this.attackTarget.active) {
+      // Verificar si el objetivo actual está dentro del rango
+      const distance = Phaser.Math.Distance.Between(this.x, this.y, (this.attackTarget as any).x, (this.attackTarget as any).y);
+      if (distance <= this.attackRange) {
+        targetToAttack = this.attackTarget;
+        enemyInRange = true;
+        console.log(`Torre ${this.id} (${this.team}): Manteniendo objetivo actual`);
+      } else {
+        console.log(`Torre ${this.id} (${this.team}): Objetivo actual fuera de rango, buscando nuevo objetivo`);
+        this.attackTarget = null;
+      }
     }
     
-    // Comprobar si hay algún enemigo dentro del rango (para mostrar visual)
-    if (targetToAttack) {
-      enemyInRange = true;
-      console.log(`Torre ${this.id} (${this.team}): Objetivo encontrado para atacar`);
-    } else {
-      // Comprobar manualmente si hay enemigos dentro del rango
-      for (const target of validTargets) {
-        const distance = Phaser.Math.Distance.Between(this.x, this.y, (target as any).x, (target as any).y);
-        if (distance <= this.attackRange) {
-          enemyInRange = true;
-          console.log(`Torre ${this.id} (${this.team}): Enemigo dentro del rango pero no seleccionado como objetivo`);
-          break;
+    // Si no tenemos un objetivo válido, buscar el más cercano
+    if (!targetToAttack) {
+      targetToAttack = this.findClosestTargetInRange(validTargets);
+      if (targetToAttack) {
+        enemyInRange = true;
+        console.log(`Torre ${this.id} (${this.team}): Objetivo encontrado para atacar`);
+      } else {
+        // Comprobar manualmente si hay enemigos dentro del rango
+        for (const target of validTargets) {
+          const distance = Phaser.Math.Distance.Between(this.x, this.y, (target as any).x, (target as any).y);
+          if (distance <= this.attackRange) {
+            enemyInRange = true;
+            console.log(`Torre ${this.id} (${this.team}): Enemigo dentro del rango pero no seleccionado como objetivo`);
+            break;
+          }
         }
       }
     }
@@ -370,15 +373,20 @@ export class Tower extends Phaser.GameObjects.Container {
   private attack(time: number): void {
     if (!this.attackTarget || !this.attackTarget.active) return;
     
-    // Debug: mostrar información sobre el ataque
-    console.log(`Torre ${this.id} (${this.team}) está atacando a un objetivo en posición ${(this.attackTarget as any).x}, ${(this.attackTarget as any).y}`);
-    
     // Registrar el tiempo del último ataque
     this.lastAttackTime = time;
     
+    // Identificar el tipo de objetivo
+    const isMinion = 'minionType' in this.attackTarget;
+    const isPlayer = 'isPlayer' in this.attackTarget && (this.attackTarget as any).isPlayer === true;
+    
+    console.log(`Torre ${this.id} (${this.team}) está atacando a un ${isMinion ? 'minion' : (isPlayer ? 'jugador' : 'objetivo desconocido')}`);
+    
     // Verificar que el objetivo tenga el método takeDamage
     if ('takeDamage' in this.attackTarget) {
-      (this.attackTarget as any).takeDamage(this.attackDamage);
+      // Aplicar daño - para jugadores, podemos aplicar un multiplicador diferente
+      const damage = isPlayer ? this.attackDamage * 1.5 : this.attackDamage;
+      (this.attackTarget as any).takeDamage(damage);
       
       // Crear efecto visual de ataque
       this.createAttackEffect();
@@ -419,5 +427,65 @@ export class Tower extends Phaser.GameObjects.Container {
         flashGraphics.destroy();
       }
     });
+  }
+  
+  private distributeGold(): void {
+    // Buscar jugadores en la escena
+    const players = this.scene.children.getChildren().filter(child => 
+      'isPlayer' in child && (child as any).isPlayer === true
+    );
+    
+    if (players.length > 0) {
+      // Calcular oro por jugador
+      const goldPerPlayer = Math.floor(this.goldValue / players.length);
+      
+      // Distribuir oro a cada jugador
+      players.forEach(player => {
+        // Primero convertir a unknown para evitar errores de tipo
+        const playerObj = player as unknown;
+        
+        // Luego verificar que tiene las propiedades necesarias
+        if ('addGold' in player && typeof (player as any).addGold === 'function' &&
+            'x' in player && 'y' in player) {
+          
+          // Ahora es seguro hacer el cast
+          const typedPlayer = playerObj as { 
+            addGold: (amount: number) => void;
+            x: number;
+            y: number;
+          };
+          
+          // Llamar al método addGold
+          typedPlayer.addGold(goldPerPlayer);
+          
+          // Mostrar texto informativo
+          const goldText = this.scene.add.text(
+            typedPlayer.x,
+            typedPlayer.y - 30,
+            `+${goldPerPlayer} oro`,
+            {
+              fontSize: '16px',
+              color: '#ffff00',
+              stroke: '#000000',
+              strokeThickness: 3
+            }
+          );
+          goldText.setOrigin(0.5);
+          
+          // Animar el texto
+          this.scene.tweens.add({
+            targets: goldText,
+            y: goldText.y - 50,
+            alpha: 0,
+            duration: 2000,
+            onComplete: () => {
+              goldText.destroy();
+            }
+          });
+        }
+      });
+      
+      console.log(`Torre ${this.id} distribuye ${this.goldValue} de oro entre ${players.length} jugadores (${Math.floor(this.goldValue / players.length)} por jugador)`);
+    }
   }
 } 
