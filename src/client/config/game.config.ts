@@ -3,8 +3,8 @@ import { MainScene } from '../scenes/MainScene';
 
 export const GameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
-  width: 1000, // Según el GDD, mapa de 1000x1000 píxeles
-  height: 1000,
+  width: 1280, // Cambiado a resolución estándar 16:9
+  height: 720,
   parent: 'game',
   backgroundColor: '#2d2d2d',
   scene: MainScene,
@@ -17,6 +17,8 @@ export const GameConfig: Phaser.Types.Core.GameConfig = {
   },
   scale: {
     mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: 1280,
+    height: 720
   }
 }; 

@@ -19,6 +19,8 @@ export class GameMap {
     structures: Phaser.Tilemaps.TilemapLayer;
   };
   private tileIndexMap: Map<string, number> = new Map();
+  private mapWidth: number = 992; // 31 tiles * 32 pixels
+  private mapHeight: number = 992; // 31 tiles * 32 pixels
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -87,6 +89,20 @@ export class GameMap {
     this.createRiver();    // Primero el río
     this.createPaths();    // Luego los caminos
     this.createBases();    // Finalmente las bases
+  }
+
+  /**
+   * Obtiene el ancho del mapa en píxeles
+   */
+  public getWidth(): number {
+    return this.mapWidth;
+  }
+
+  /**
+   * Obtiene el alto del mapa en píxeles
+   */
+  public getHeight(): number {
+    return this.mapHeight;
   }
 
   private getTileIndex(name: string): number {
