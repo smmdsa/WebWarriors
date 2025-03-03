@@ -30,6 +30,9 @@ export class Minion extends Phaser.GameObjects.Sprite {
   public currentTarget: Phaser.GameObjects.GameObject | null = null;
   private attackLine: Phaser.GameObjects.Graphics | null = null;
   
+  // Añadir una variable para rastrear quién hizo el último daño
+  private lastDamageSource: any = null;
+  
   constructor(scene: Phaser.Scene, x: number, y: number, type: MinionType, subtype: MinionSubtype) {
     // Determinar la textura según el tipo y subtipo
     let texture = '';
@@ -712,6 +715,38 @@ export class Minion extends Phaser.GameObjects.Sprite {
     // Mostrar texto de daño
     this.showDamageText(amount);
     
+    // Si viene de un jugador, guardar la referencia al último que hizo daño
+    if (fromPlayer && this.scene) {
+      // Buscar el jugador que causó el daño (el más cercano)
+      const players = this.scene.children.getChildren().filter(
+        child => child.type === 'Sprite' && 'isPlayer' in child && (child as any).isPlayer === true
+      );
+      
+      if (players.length > 0) {
+        // Encontrar el jugador más cercano (asumiendo que es el que atacó)
+        let closestPlayer = null;
+        let minDistance = Infinity;
+        
+        players.forEach(player => {
+          // Asegurar que player tiene propiedades x e y
+          if ('x' in player && 'y' in player) {
+            const playerX = (player as unknown as { x: number }).x;
+            const playerY = (player as unknown as { y: number }).y;
+            const distance = Phaser.Math.Distance.Between(this.x, this.y, playerX, playerY);
+            if (distance < minDistance) {
+              closestPlayer = player;
+              minDistance = distance;
+            }
+          }
+        });
+        
+        // Si el jugador está en rango de ataque, asumimos que es el que atacó
+        if (closestPlayer && minDistance <= (closestPlayer as any).attackRange * 1.2) {
+          this.lastDamageSource = closestPlayer;
+        }
+      }
+    }
+    
     if (this.health <= 0) {
       this.health = 0;
       this.die(fromPlayer);
@@ -783,17 +818,26 @@ export class Minion extends Phaser.GameObjects.Sprite {
     if (killedByPlayer) {
       this.showGoldText();
       
-      // Buscar jugadores aliados para darles el oro
-      const players = this.scene.children.getChildren().filter(
-        child => child.type === 'Sprite' && 'isAlly' in child && child.isAlly && 
-        typeof (child as any).addGold === 'function' && typeof (child as any).addMinionKill === 'function'
-      );
-      
-      if (players.length > 0) {
-        // Dar oro al primer jugador encontrado
-        const player = players[0] as any;
-        player.addGold(this.goldValue);
-        player.addMinionKill();
+      // Si tenemos un jugador específico que dio el último golpe, darle el oro a él
+      if (this.lastDamageSource && 'addGold' in this.lastDamageSource && 'addMinionKill' in this.lastDamageSource) {
+        // Dar oro y aumentar contador de minions matados al jugador que dio el último golpe
+        (this.lastDamageSource as any).addGold(this.goldValue);
+        (this.lastDamageSource as any).addMinionKill();
+        console.log(`Oro (${this.goldValue}) otorgado al jugador que dio el último golpe`);
+      } else {
+        // Buscar jugadores para darles el oro (comportamiento anterior como fallback)
+        const players = this.scene.children.getChildren().filter(
+          child => child.type === 'Sprite' && 'isAlly' in child && child.isAlly && 
+          typeof (child as any).addGold === 'function' && typeof (child as any).addMinionKill === 'function'
+        );
+        
+        if (players.length > 0) {
+          // Dar oro al primer jugador encontrado
+          const player = players[0] as any;
+          player.addGold(this.goldValue);
+          player.addMinionKill();
+          console.log(`Oro (${this.goldValue}) otorgado al primer jugador encontrado (fallback)`);
+        }
       }
     }
     

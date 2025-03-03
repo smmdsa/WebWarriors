@@ -699,29 +699,122 @@ export class Player extends Phaser.GameObjects.Sprite {
   private createDamageVisualEffect(target: any, damageType: DamageType) {
     // Color según tipo de daño
     let color = 0xffffff;
+    let colorText = '#ffffff';
+    let effectText = "DAMAGE!";
+    
     if (damageType === DamageType.PHYSICAL) {
       color = 0xff0000;
+      colorText = '#ff0000';
+      effectText = "PHYSICAL!";
     } else if (damageType === DamageType.MAGICAL) {
       color = 0x00ffff;
+      colorText = '#00ffff';
+      effectText = "MAGICAL!";
     } else if (damageType === DamageType.TRUE) {
       color = 0xffff00;
+      colorText = '#ffff00';
+      effectText = "TRUE!";
     }
     
-    // Crear efecto de impacto
+    // Crear efecto de línea desde el jugador hasta el objetivo
+    const effectLine = this.scene.add.graphics();
+    effectLine.lineStyle(4, color, 0.7);
+    effectLine.lineBetween(this.x, this.y, target.x, target.y);
+    
+    // Crear efecto de impacto principal
     const impact = this.scene.add.graphics();
     impact.fillStyle(color, 0.7);
-    impact.fillCircle(target.x, target.y, 20);
+    impact.fillCircle(target.x, target.y, 25);
     
-    // Animar el efecto
+    // Crear anillo exterior
+    const ring = this.scene.add.graphics();
+    ring.lineStyle(3, color, 0.5);
+    ring.strokeCircle(target.x, target.y, 35);
+    
+    // Crear texto de efecto
+    const skillText = this.scene.add.text(
+      target.x, 
+      target.y - 25, 
+      effectText, 
+      {
+        fontSize: '16px',
+        color: colorText,
+        stroke: '#000000',
+        strokeThickness: 3,
+        fontStyle: 'bold'
+      }
+    );
+    skillText.setOrigin(0.5);
+    
+    // Animar el texto
+    this.scene.tweens.add({
+      targets: skillText,
+      y: skillText.y - 40,
+      alpha: 0,
+      duration: 800,
+      ease: 'Power2',
+      onComplete: () => {
+        skillText.destroy();
+      }
+    });
+    
+    // Animar la línea
+    this.scene.tweens.add({
+      targets: effectLine,
+      alpha: 0,
+      duration: 200,
+      onComplete: () => {
+        effectLine.destroy();
+      }
+    });
+    
+    // Animar el efecto principal
     this.scene.tweens.add({
       targets: impact,
       alpha: 0,
       scale: 2,
-      duration: 300,
+      duration: 500,
+      ease: 'Power2',
       onComplete: () => {
         impact.destroy();
       }
     });
+    
+    // Animar el anillo
+    this.scene.tweens.add({
+      targets: ring,
+      alpha: 0,
+      scale: 2.5,
+      duration: 600,
+      ease: 'Power2',
+      onComplete: () => {
+        ring.destroy();
+      }
+    });
+    
+    // Crear múltiples partículas para un efecto más impresionante
+    for (let i = 0; i < 8; i++) {
+      const angle = (Math.PI * 2 / 8) * i;
+      const distance = 15;
+      const particleX = target.x + Math.cos(angle) * distance;
+      const particleY = target.y + Math.sin(angle) * distance;
+      
+      const particle = this.scene.add.graphics();
+      particle.fillStyle(color, 0.8);
+      particle.fillCircle(particleX, particleY, 5);
+      
+      this.scene.tweens.add({
+        targets: particle,
+        x: particleX + Math.cos(angle) * 30,
+        y: particleY + Math.sin(angle) * 30,
+        alpha: 0,
+        scale: 0.5,
+        duration: 500,
+        onComplete: () => {
+          particle.destroy();
+        }
+      });
+    }
   }
   
   /**
@@ -985,7 +1078,12 @@ export class Player extends Phaser.GameObjects.Sprite {
     
     // Aplicar daño al objetivo
     if ('takeDamage' in target && typeof target.takeDamage === 'function') {
-      target.takeDamage(damage);
+      // Si es un minion, indicar que el daño viene del jugador para otorgar oro si muere
+      if (isEnemyMinion) {
+        target.takeDamage(damage, true); // Pasar true para indicar que el daño es del jugador
+      } else {
+        target.takeDamage(damage);
+      }
       
       // Crear efecto visual según el tipo de ataque
       if (this.attackType === AttackType.MELEE) {
@@ -1010,16 +1108,72 @@ export class Player extends Phaser.GameObjects.Sprite {
    * Crea un efecto visual de ataque cuerpo a cuerpo
    */
   private createMeleeAttackEffect(target: any): void {
-    // Crear efecto de golpe
+    // Crea línea de ataque desde el jugador hasta el objetivo
+    const attackLine = this.scene.add.graphics();
+    attackLine.lineStyle(3, 0xffaa00, 0.8);
+    attackLine.lineBetween(this.x, this.y, target.x, target.y);
+    
+    // Crear un destello en el punto de impacto
+    const flashCircle = this.scene.add.graphics();
+    flashCircle.fillStyle(0xffaa00, 0.7);
+    flashCircle.fillCircle(target.x, target.y, 20);
+    
+    // Crear efecto de golpe (más visible)
     const attackEffect = this.scene.add.graphics();
-    attackEffect.fillStyle(0xffffff, 0.7);
+    attackEffect.fillStyle(0xffffff, 0.8);
     attackEffect.fillCircle(target.x, target.y, 15);
     
-    // Desvanecer el efecto
+    // Crear texto de "slash" para mejor feedback visual
+    const slashText = this.scene.add.text(
+      target.x, 
+      target.y - 15, 
+      "SLASH!", 
+      { 
+        fontSize: '16px',
+        color: '#ffaa00',
+        stroke: '#000000',
+        strokeThickness: 3
+      }
+    );
+    slashText.setOrigin(0.5);
+    
+    // Animar el texto
+    this.scene.tweens.add({
+      targets: slashText,
+      y: slashText.y - 30,
+      alpha: 0,
+      duration: 500,
+      onComplete: () => {
+        slashText.destroy();
+      }
+    });
+    
+    // Desvanecer la línea de ataque rápidamente
+    this.scene.tweens.add({
+      targets: attackLine,
+      alpha: 0,
+      duration: 100,
+      onComplete: () => {
+        attackLine.destroy();
+      }
+    });
+    
+    // Desvanecer el destello rápidamente
+    this.scene.tweens.add({
+      targets: flashCircle,
+      alpha: 0,
+      scale: 1.5,
+      duration: 150,
+      onComplete: () => {
+        flashCircle.destroy();
+      }
+    });
+    
+    // Desvanecer el efecto de golpe
     this.scene.tweens.add({
       targets: attackEffect,
       alpha: 0,
-      scale: 1.5,
+      scale: 1.8,
       duration: 200,
       onComplete: () => {
         attackEffect.destroy();
@@ -1031,9 +1185,6 @@ export class Player extends Phaser.GameObjects.Sprite {
    * Crea un efecto visual de ataque a distancia
    */
   private createRangedAttackEffect(target: any): void {
-    // Crear proyectil
-    const projectile = this.scene.add.graphics();
-    
     // Color según tipo de daño
     let color = 0xffffff;
     if (this.damageType === DamageType.PHYSICAL) {
@@ -1042,33 +1193,116 @@ export class Player extends Phaser.GameObjects.Sprite {
       color = 0x00ffff;
     }
     
-    projectile.fillStyle(color, 1);
-    projectile.fillCircle(this.x, this.y, 5);
+    // Crear trayectoria del proyectil
+    const trajectory = this.scene.add.graphics();
+    trajectory.lineStyle(2, color, 0.3);
+    trajectory.lineBetween(this.x, this.y, target.x, target.y);
     
-    // Animar el proyectil
+    // Crear proyectil más visible
+    const projectile = this.scene.add.graphics();
+    projectile.fillStyle(color, 1);
+    projectile.fillCircle(this.x, this.y, 8);
+    
+    // Añadir un destello alrededor del proyectil
+    const glow = this.scene.add.graphics();
+    glow.fillStyle(color, 0.4);
+    glow.fillCircle(this.x, this.y, 12);
+    
+    // Texto de indicador de disparo
+    const shootText = this.scene.add.text(
+      this.x + 20, 
+      this.y - 15, 
+      "SHOOT!", 
+      { 
+        fontSize: '14px',
+        color: this.damageType === DamageType.PHYSICAL ? '#ff8800' : '#00ffff',
+        stroke: '#000000',
+        strokeThickness: 3
+      }
+    );
+    shootText.setOrigin(0.5);
+    
+    // Animar el texto
     this.scene.tweens.add({
-      targets: projectile,
+      targets: shootText,
+      y: shootText.y - 20,
+      alpha: 0,
+      duration: 300,
+      onComplete: () => {
+        shootText.destroy();
+      }
+    });
+    
+    // Desvanecer la trayectoria
+    this.scene.tweens.add({
+      targets: trajectory,
+      alpha: 0,
+      duration: 200,
+      onComplete: () => {
+        trajectory.destroy();
+      }
+    });
+    
+    // Grupo de elementos para animar juntos
+    const projectileGroup = [projectile, glow];
+    
+    // Animar el proyectil y su destello
+    this.scene.tweens.add({
+      targets: projectileGroup,
       x: target.x,
       y: target.y,
       duration: 200,
+      ease: 'Power1',
       onComplete: () => {
-        // Crear efecto de impacto
-        const impact = this.scene.add.graphics();
-        impact.fillStyle(color, 0.7);
-        impact.fillCircle(target.x, target.y, 15);
+        // Destruir proyectil y destello
+        projectile.destroy();
+        glow.destroy();
         
-        // Desvanecer el impacto
+        // Crear efecto de impacto más dramático
+        const impact = this.scene.add.graphics();
+        impact.fillStyle(color, 0.8);
+        impact.fillCircle(target.x, target.y, 20);
+        
+        const impactRing = this.scene.add.graphics();
+        impactRing.lineStyle(3, color, 0.6);
+        impactRing.strokeCircle(target.x, target.y, 25);
+        
+        // Texto de impacto
+        const hitText = this.scene.add.text(
+          target.x, 
+          target.y - 20, 
+          "HIT!", 
+          { 
+            fontSize: '16px',
+            color: this.damageType === DamageType.PHYSICAL ? '#ff8800' : '#00ffff',
+            stroke: '#000000',
+            strokeThickness: 3
+          }
+        );
+        hitText.setOrigin(0.5);
+        
+        // Animar el texto de impacto
         this.scene.tweens.add({
-          targets: impact,
+          targets: hitText,
+          y: hitText.y - 30,
           alpha: 0,
-          scale: 1.5,
-          duration: 200,
+          duration: 400,
           onComplete: () => {
-            impact.destroy();
+            hitText.destroy();
           }
         });
         
-        projectile.destroy();
+        // Desvanecer el impacto
+        this.scene.tweens.add({
+          targets: [impact, impactRing],
+          alpha: 0,
+          scale: 1.8,
+          duration: 300,
+          onComplete: () => {
+            impact.destroy();
+            impactRing.destroy();
+          }
+        });
       }
     });
   }
