@@ -4,6 +4,9 @@ import { Player } from '../entities/Player';
 import { MinionManager, MinionSubtype } from '../managers/MinionManager';
 import { PlayerHUD } from '../ui/PlayerHUD';
 import { LevelTool } from '../tools/LevelTool';
+import { TowerManager } from '../managers/TowerManager';
+import { TowerTool } from '../tools/TowerTool';
+import { Team } from '../entities/Tower';
 
 export class MainScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -35,6 +38,10 @@ export class MainScene extends Phaser.Scene {
   
   // Herramienta de nivel
   private levelTool!: LevelTool;
+  
+  // Gestor de torres y herramienta
+  private towerManager!: TowerManager;
+  private towerTool!: TowerTool;
 
   constructor() {
     super({ key: 'MainScene' });
@@ -45,14 +52,12 @@ export class MainScene extends Phaser.Scene {
     this.gameMap = new GameMap(this);
     this.gameMap.preload();
     
-    // Crear una textura temporal para el jugador
+    // Crear texturas temporales
     this.createPlayerTexture();
-    
-    // Crear texturas para los minions
     this.createMinionTextures();
-    
-    // Crear texturas para los iconos de habilidades
     this.createSkillIcons();
+    
+    console.log('Todas las texturas creadas correctamente');
   }
 
   create(): void {
@@ -78,9 +83,8 @@ export class MainScene extends Phaser.Scene {
     
     // Crear grupo de física para minions
     this.minionsGroup = this.physics.add.group({
-      collideWorldBounds: true,
-      bounceX: 0.1,
-      bounceY: 0.1
+      classType: Phaser.GameObjects.Sprite,
+      runChildUpdate: true
     });
     
     // Crear el HUD del jugador
@@ -102,8 +106,13 @@ export class MainScene extends Phaser.Scene {
     // Inicializar el gestor de minions
     this.minionManager = new MinionManager(this);
     
-    // Inicializar la herramienta de nivel
+    // Inicializar el gestor de torres
+    this.towerManager = new TowerManager(this);
+    this.towerManager.createTowersAndNexuses();
+    
+    // Inicializar herramientas
     this.levelTool = new LevelTool(this, this.minionManager);
+    this.towerTool = new TowerTool(this, this.towerManager);
     
     // Configurar colisiones
     this.setupCollisions();
@@ -155,7 +164,7 @@ export class MainScene extends Phaser.Scene {
     // Actualizar el texto de zoom inicial
     this.updateZoomText();
     
-    // Configurar evento para procesar comandos de consola
+    // Configurar comandos de consola
     this.setupConsoleCommands();
   }
 
@@ -189,9 +198,14 @@ export class MainScene extends Phaser.Scene {
     this.playerHUD.update();
     
     // Actualizar la herramienta de nivel
-    if (this.levelTool) {
-      this.levelTool.update();
-    }
+    this.levelTool.update();
+    
+    // Actualizar torres
+    const targets = [
+      ...this.minionManager.getAllMinions(),
+      this.player
+    ];
+    this.towerManager.update(time, delta, targets);
   }
   
   private updateZoomText(): void {
@@ -532,33 +546,66 @@ export class MainScene extends Phaser.Scene {
    * Configura los comandos de consola
    */
   private setupConsoleCommands(): void {
-    // Añadir función para procesar comandos de texto
-    (window as any).processCommand = (command: string) => {
-      // Eliminar el prefijo '/' si existe
-      const cleanCommand = command.startsWith('/') ? command.substring(1) : command;
-      
-      if (cleanCommand.startsWith('qa-mode')) {
-        const enabled = cleanCommand.includes('on');
-        (window as any).qaMode(enabled);
-        return `QA Mode ${enabled ? 'activado' : 'desactivado'}`;
-      } else if (cleanCommand === 'show-paths') {
-        return (window as any).showPaths();
-      } else if (cleanCommand === 'show-spawns') {
-        return (window as any).showSpawns();
-      }
-      
-      return `Comando desconocido: ${command}`;
-    };
+    // Limpiar el comando de entrada
+    const cleanCommand = (cmd: string) => cmd.trim().replace(/^\//, '');
     
-    // No sobrescribimos console.log ya que causa el error de expresión regular
-    // En su lugar, exponemos una función global para ejecutar comandos
+    // Función global para ejecutar comandos
     (window as any).cmd = (command: string) => {
-      const result = (window as any).processCommand(command);
-      console.log(result);
-      return result;
+      const cleanedCommand = cleanCommand(command);
+      console.log(`Ejecutando comando: ${cleanedCommand}`);
+      
+      // Procesar el comando
+      const parts = cleanedCommand.split(' ');
+      const cmd = parts[0];
+      const args = parts.slice(1);
+      
+      switch (cmd) {
+        case 'qa-mode':
+          const isOn = args[0] === 'on';
+          this.levelTool.setActive(isOn);
+          console.log(`Modo QA ${isOn ? 'activado' : 'desactivado'}`);
+          break;
+          
+        case 'tower-tool':
+          const towerToolOn = args[0] === 'on';
+          this.towerTool.setActive(towerToolOn);
+          console.log(`Herramienta de torres ${towerToolOn ? 'activada' : 'desactivada'}`);
+          break;
+          
+        case 'show-paths':
+          (window as any).showPaths();
+          break;
+          
+        case 'show-spawns':
+          (window as any).showSpawns();
+          break;
+          
+        case 'show-tower-ranges':
+          (window as any).showTowerRanges();
+          break;
+          
+        case 'show-tower-positions':
+          (window as any).showTowerPositions();
+          break;
+          
+        default:
+          console.log(`Comando desconocido: ${cmd}`);
+      }
     };
     
-    console.log('Comandos de consola configurados. Usa "cmd(\'qa-mode on\')" para activar el modo QA.');
-    console.log('Otros comandos disponibles: "cmd(\'show-paths\')", "cmd(\'show-spawns\')"');
+    // Interceptar la consola para procesar comandos
+    const originalConsoleLog = console.log;
+    console.log = (...args: any[]) => {
+      const firstArg = args[0];
+      if (typeof firstArg === 'string' && firstArg.startsWith('/')) {
+        (window as any).cmd(firstArg);
+      } else {
+        originalConsoleLog(...args);
+      }
+    };
+    
+    // Registrar comandos de herramientas
+    this.levelTool.registerConsoleCommands();
+    this.towerTool.registerConsoleCommands();
   }
 } 

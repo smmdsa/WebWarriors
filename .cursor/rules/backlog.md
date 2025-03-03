@@ -56,6 +56,11 @@ A continuación, te presento el **backlog detallado de tareas**, organizado en f
    - ✅ Implementar sistema de oro al matar minions (25 oro para melee, 12 para caster, 50 para cannon).
    - ✅ Añadir contador de minions matados para el jugador.
    - ✅ Implementar cambio de objetivo de minions cuando el jugador ataca a un campeón enemigo.
+   - ✅ Mejorar comportamiento de minions para que no se bloqueen entre sí durante ataques.
+   - ✅ Ajustar rangos de ataque: caster (3 unidades/96 píxeles), cannon (3.5 unidades/112 píxeles).
+   - ✅ Implementar movimiento continuo durante ataques (velocidad reducida al 30%).
+   - ✅ Añadir sistema de notificación cuando el objetivo muere.
+   - ✅ Corregir errores de referencia nula en métodos de ataque.
 
 7. ✅ **Implementar sistema de progresión del jugador**
    - ✅ Añadir sistema de experiencia para el jugador.
@@ -194,6 +199,15 @@ A continuación, te presento el **backlog detallado de tareas**, organizado en f
 28. **Expandir contenido**
     - Añadir más personajes o mapas según demanda.
     - Implementar cosméticos (skins) como opción de monetización freemium.
+
+29. ✅ **Herramientas de desarrollo y QA**
+    - ✅ Implementar modo QA activable mediante comando de consola (/qa-mode on).
+    - ✅ Crear herramienta de nivel (LevelTool) para ajustar puntos de generación y rutas.
+    - ✅ Añadir comandos para mostrar rutas y puntos de generación (/show-paths, /show-spawns).
+    - ✅ Implementar selección de carriles mediante teclas numéricas (1, 2, 3).
+    - ✅ Añadir funcionalidad para detener la generación de minions durante pruebas.
+    - ✅ Permitir ajuste de posiciones de puntos de generación y rutas en tiempo real.
+    - ✅ Implementar sistema de comandos de consola para facilitar pruebas.
 
 ---
 

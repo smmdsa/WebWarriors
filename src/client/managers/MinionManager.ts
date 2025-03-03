@@ -442,6 +442,13 @@ export class MinionManager {
   }
   
   /**
+   * Obtiene todos los minions activos
+   */
+  public getAllMinions(): Phaser.GameObjects.GameObject[] {
+    return this.minions;
+  }
+  
+  /**
    * Establece los puntos de spawn de aliados
    */
   public setAllySpawnPoints(points: Phaser.Math.Vector2[]): void {

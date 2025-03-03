@@ -542,7 +542,7 @@ export class LevelTool {
   /**
    * Registra los comandos en la consola del navegador
    */
-  private registerConsoleCommands(): void {
+  public registerConsoleCommands(): void {
     // Añadir el objeto al ámbito global (window)
     (window as any).levelTool = this;
     
